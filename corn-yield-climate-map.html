@@ -550,16 +550,11 @@ function makeGeoJSONWithColors() {
 }
 
 function rebuildLayer() {
-  // Revoke old blob to avoid memory leak
-  if (currentBlob) URL.revokeObjectURL(currentBlob);
-  const gj = makeGeoJSONWithColors();
-  const blob = new Blob([JSON.stringify(gj)], {type: 'application/json'});
-  currentBlob = URL.createObjectURL(blob);
-
-  // Update existing layer URL — triggers a re-render
+  // With UniqueValueRenderer on 'name', we only need to update the renderer —
+  // no need to recreate the Blob or refresh the layer. Instant re-color.
   if (geoLayer) {
-    geoLayer.url = currentBlob;
-    geoLayer.refresh();
+    geoLayer.renderer = buildRenderer();
+    logInfo('Renderer updated — ' + Object.keys(PROJ).length + ' states recolored');
   }
 }
 
@@ -705,10 +700,7 @@ require([
     const {dr,dt,dh,co2,irr} = getInputs();
     PROJ = {};
     Object.keys(SD).forEach(n=>{PROJ[n]=calcY(n,dr,dt,dh,co2,irr);});
-    if (geoLayer) {
-      rebuildLayer();
-      geoLayer.renderer = buildRenderer();
-    }
+    rebuildLayer();   // updates renderer colors instantly
     buildLeg();
     updateSum();
     updateChart();
@@ -734,36 +726,26 @@ require([
 
 logInfo('require() call dispatched — waiting for callback...');
 
-// Build a ClassBreaksRenderer on yieldVal — maps numeric value to color ramp
+// UniqueValueRenderer keyed on 'name' field — one entry per state with exact color.
+// Much more reliable than ClassBreaks on a computed numeric field.
 function buildRenderer() {
-  const stops = RAMPS[VIEW];
-  const breaks = [];
-  for (let i=0; i<stops.length-1; i++) {
-    breaks.push({
-      minValue: i===0 ? -9999 : stops[i][0],
-      maxValue: stops[i+1][0],
-      symbol: {
-        type: 'simple-fill',
-        color: hexToArr(interpHex(stops[i][1], stops[i+1][1], 0.5)),
-        outline: {color:[80,60,40,160], width:0.6}
-      }
-    });
-  }
-  // last bucket
-  breaks.push({
-    minValue: stops[stops.length-1][0],
-    maxValue: 9999,
+  const infos = Object.keys(SD).map(name => ({
+    value: name,
     symbol: {
       type: 'simple-fill',
-      color: hexToArr(stops[stops.length-1][1]),
-      outline: {color:[80,60,40,160], width:0.6}
+      color: hexToArr(colorFor(name), 220),
+      outline: { color: [60, 40, 20, 180], width: 0.6 }
     }
-  });
+  }));
   return {
-    type: 'class-breaks',
-    field: 'yieldVal',
-    defaultSymbol: {type:'simple-fill', color:[200,200,200,120], outline:{color:[80,60,40,100],width:0.5}},
-    classBreakInfos: breaks,
+    type: 'unique-value',
+    field: 'name',
+    defaultSymbol: {
+      type: 'simple-fill',
+      color: [180, 170, 155, 180],
+      outline: { color: [60, 40, 20, 120], width: 0.5 }
+    },
+    uniqueValueInfos: infos
   };
 }
 </script>
