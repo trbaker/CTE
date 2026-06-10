@@ -5,116 +5,111 @@
 <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>Corn Yield &amp; Climate Change — US Map Activity</title>
 
+<!-- ArcGIS Maps SDK 4.29 -->
 <link rel="stylesheet" href="https://js.arcgis.com/4.29/esri/themes/light/main.css">
 <script src="https://js.arcgis.com/4.29/"></script>
 
 <style>
-  html, body { margin: 0; padding: 0; height: 100%; font-family: Georgia, serif; background: #f5f0e8; color: #1e1812; overflow: hidden; }
+html,body{margin:0;padding:0;height:100%;overflow:hidden;font-family:Georgia,serif;background:#f5f0e8;color:#1e1812}
+#app{display:flex;flex-direction:column;height:100vh}
 
-  #app { display: flex; flex-direction: column; height: 100vh; }
+/* HEADER */
+#hdr{background:#3d2b1f;color:#f5f0e8;padding:.6rem 1.2rem;display:flex;align-items:baseline;gap:1rem;border-bottom:3px solid #c9901a;flex-shrink:0}
+#hdr h1{font-size:1.05rem;font-weight:700}
+#hdr p{font-family:'Helvetica Neue',sans-serif;font-size:.68rem;opacity:.6;letter-spacing:.06em;text-transform:uppercase}
 
-  /* ── HEADER ── */
-  #hdr { background: #3d2b1f; color: #f5f0e8; padding: .6rem 1.2rem; display: flex; align-items: baseline; gap: 1rem; border-bottom: 3px solid #c9901a; flex-shrink: 0; }
-  #hdr h1 { font-size: 1.05rem; font-weight: 700; }
-  #hdr p  { font-family: 'Helvetica Neue', sans-serif; font-size: .68rem; opacity: .6; letter-spacing: .06em; text-transform: uppercase; }
+/* LAYOUT */
+#body{display:flex;flex:1;overflow:hidden;min-height:0}
 
-  /* ── BODY ── */
-  #body { display: flex; flex: 1; overflow: hidden; min-height: 0; }
+/* LEFT PANEL */
+#panel{width:310px;flex-shrink:0;background:#fffdf7;border-right:1px solid #d8cfc0;overflow-y:auto;padding:.85rem;display:flex;flex-direction:column;gap:.8rem}
+.blk{border:1px solid #d8cfc0;border-radius:7px;overflow:hidden}
+.bh{background:#3d2b1f;color:#f5f0e8;padding:5px 10px;font-family:'Helvetica Neue',sans-serif;font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em}
+.bb{padding:.75rem .85rem;display:flex;flex-direction:column;gap:.65rem}
 
-  /* ── LEFT PANEL ── */
-  #panel { width: 310px; flex-shrink: 0; background: #fffdf7; border-right: 1px solid #d8cfc0; overflow-y: auto; padding: .85rem; display: flex; flex-direction: column; gap: .8rem; }
+/* scenario buttons */
+.srow{display:flex;gap:4px}
+.sb{flex:1;padding:5px 3px;border:1.5px solid #d8cfc0;background:#fffdf7;border-radius:6px;font-family:'Helvetica Neue',sans-serif;font-size:.67rem;font-weight:700;text-align:center;cursor:pointer;color:#6b5e52;line-height:1.3;transition:all .15s}
+.sb:hover{border-color:#4a7c4e;color:#4a7c4e}
+.sb.on{background:#4a7c4e;border-color:#4a7c4e;color:#fff}
 
-  .blk { border: 1px solid #d8cfc0; border-radius: 7px; overflow: hidden; }
-  .bh  { background: #3d2b1f; color: #f5f0e8; padding: 5px 10px; font-family: 'Helvetica Neue', sans-serif; font-size: .65rem; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; }
-  .bb  { padding: .75rem .85rem; display: flex; flex-direction: column; gap: .65rem; }
+/* sliders */
+.sg{display:flex;flex-direction:column;gap:3px}
+.sl{display:flex;justify-content:space-between;font-family:'Helvetica Neue',sans-serif;font-size:.73rem;color:#6b5e52}
+.sl strong{color:#1e1812}
+input[type=range]{width:100%;accent-color:#4a7c4e;cursor:pointer;height:4px}
+.sh{display:flex;justify-content:space-between;font-family:'Helvetica Neue',sans-serif;font-size:.6rem;color:#aaa}
 
-  /* scenario buttons */
-  .srow { display: flex; gap: 4px; }
-  .sb { flex: 1; padding: 5px 3px; border: 1.5px solid #d8cfc0; background: #fffdf7; border-radius: 6px; font-family: 'Helvetica Neue', sans-serif; font-size: .67rem; font-weight: 700; text-align: center; cursor: pointer; color: #6b5e52; line-height: 1.3; transition: all .15s; }
-  .sb:hover { border-color: #4a7c4e; color: #4a7c4e; }
-  .sb.on { background: #4a7c4e; border-color: #4a7c4e; color: #fff; }
+/* toggle */
+.tog{display:flex;align-items:flex-start;gap:7px;font-family:'Helvetica Neue',sans-serif;font-size:.72rem;color:#6b5e52}
+.tog input{accent-color:#4a7c4e;cursor:pointer;margin-top:2px;flex-shrink:0}
 
-  /* sliders */
-  .sg { display: flex; flex-direction: column; gap: 3px; }
-  .sl { display: flex; justify-content: space-between; font-family: 'Helvetica Neue', sans-serif; font-size: .73rem; color: #6b5e52; }
-  .sl strong { color: #1e1812; }
-  input[type=range] { width: 100%; accent-color: #4a7c4e; cursor: pointer; height: 4px; }
-  .sh { display: flex; justify-content: space-between; font-family: 'Helvetica Neue', sans-serif; font-size: .6rem; color: #999; }
+/* metrics */
+.mr{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.mc{background:#f5f0e8;border-radius:6px;padding:.5rem .65rem;text-align:center}
+.mv{font-size:1.25rem;font-weight:700;line-height:1;color:#1e1812}
+.mv.loss{color:#b84a2c}.mv.gain{color:#4a7c4e}
+.ml{font-family:'Helvetica Neue',sans-serif;font-size:.6rem;text-transform:uppercase;letter-spacing:.07em;color:#6b5e52;margin-top:2px}
 
-  /* toggle */
-  .tog { display: flex; align-items: flex-start; gap: 7px; font-family: 'Helvetica Neue', sans-serif; font-size: .72rem; color: #6b5e52; }
-  .tog input { accent-color: #4a7c4e; cursor: pointer; margin-top: 2px; flex-shrink: 0; }
+/* state detail */
+.sd{background:#f5f0e8;border-radius:6px;padding:.65rem;font-family:'Helvetica Neue',sans-serif}
+.sdn{font-size:.88rem;font-weight:700;color:#3d2b1f;margin-bottom:.4rem}
+.sdr{display:flex;justify-content:space-between;font-size:.72rem;padding:2px 0;border-bottom:1px solid #d8cfc0}
+.sdr:last-child{border-bottom:none}
+.sdk{color:#6b5e52}.sdv{font-weight:600}
+.sdv.neg{color:#b84a2c}.sdv.pos{color:#4a7c4e}
 
-  /* metrics */
-  .mr { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-  .mc { background: #f5f0e8; border-radius: 6px; padding: .5rem .65rem; text-align: center; }
-  .mv { font-size: 1.25rem; font-weight: 700; line-height: 1; color: #1e1812; }
-  .mv.loss { color: #b84a2c; }
-  .mv.gain { color: #4a7c4e; }
-  .ml { font-family: 'Helvetica Neue', sans-serif; font-size: .6rem; text-transform: uppercase; letter-spacing: .07em; color: #6b5e52; margin-top: 2px; }
+/* callouts */
+.no{border-radius:6px;padding:.6rem .75rem;font-family:'Helvetica Neue',sans-serif;font-size:.72rem;line-height:1.5}
+.no.sci{background:#e8f0f7;border-left:3px solid #2c6e9e;color:#1a3d5a}
+.no.q{background:#fdf3de;border-left:3px solid #c9901a;color:#4a3200}
+.no strong{font-weight:700}
 
-  /* state detail */
-  .sd { background: #f5f0e8; border-radius: 6px; padding: .65rem; font-family: 'Helvetica Neue', sans-serif; }
-  .sdn { font-size: .88rem; font-weight: 700; color: #3d2b1f; margin-bottom: .4rem; }
-  .sdr { display: flex; justify-content: space-between; font-size: .72rem; padding: 2px 0; border-bottom: 1px solid #d8cfc0; }
-  .sdr:last-child { border-bottom: none; }
-  .sdk { color: #6b5e52; }
-  .sdv { font-weight: 600; }
-  .sdv.neg { color: #b84a2c; }
-  .sdv.pos { color: #4a7c4e; }
+/* MAP SIDE */
+#mapside{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+#toolbar{background:#fffdf7;border-bottom:1px solid #d8cfc0;padding:.45rem .9rem;display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;flex-shrink:0}
+.vrow{display:flex;gap:4px}
+.vb{padding:3px 10px;border:1px solid #d8cfc0;background:transparent;border-radius:20px;font-family:'Helvetica Neue',sans-serif;font-size:.67rem;font-weight:700;cursor:pointer;color:#6b5e52;transition:all .15s}
+.vb:hover{border-color:#4a7c4e;color:#4a7c4e}
+.vb.on{background:#4a7c4e;border-color:#4a7c4e;color:#fff}
+.tn{font-family:'Helvetica Neue',sans-serif;font-size:.67rem;color:#aaa;margin-left:auto}
+#status{font-family:'Helvetica Neue',sans-serif;font-size:.67rem;color:#c9901a;font-style:italic}
 
-  /* callouts */
-  .no { border-radius: 6px; padding: .6rem .75rem; font-family: 'Helvetica Neue', sans-serif; font-size: .72rem; line-height: 1.5; }
-  .no.sci { background: #e8f0f7; border-left: 3px solid #2c6e9e; color: #1a3d5a; }
-  .no.q   { background: #fdf3de; border-left: 3px solid #c9901a; color: #4a3200; }
-  .no strong { font-weight: 700; }
+#viewDiv{flex:1;min-height:0;position:relative}
 
-  /* ── MAP AREA ── */
-  #mapside { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+/* legend */
+#legrow{background:#fffdf7;border-top:1px solid #d8cfc0;padding:.45rem .9rem;display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;flex-shrink:0}
+.ll{font-family:'Helvetica Neue',sans-serif;font-size:.65rem;color:#6b5e52;text-transform:uppercase;letter-spacing:.07em;margin-right:3px}
+.sw{width:12px;height:12px;border-radius:2px;display:inline-block;flex-shrink:0}
+.lt{font-family:'Helvetica Neue',sans-serif;font-size:.63rem;color:#6b5e52;margin-right:5px}
 
-  #toolbar { background: #fffdf7; border-bottom: 1px solid #d8cfc0; padding: .45rem .9rem; display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; flex-shrink: 0; }
-  .vrow { display: flex; gap: 4px; }
-  .vb { padding: 3px 10px; border: 1px solid #d8cfc0; background: transparent; border-radius: 20px; font-family: 'Helvetica Neue', sans-serif; font-size: .67rem; font-weight: 700; cursor: pointer; color: #6b5e52; transition: all .15s; }
-  .vb:hover { border-color: #4a7c4e; color: #4a7c4e; }
-  .vb.on { background: #4a7c4e; border-color: #4a7c4e; color: #fff; }
-  .tn { font-family: 'Helvetica Neue', sans-serif; font-size: .67rem; color: #999; margin-left: auto; }
-  #status { font-family: 'Helvetica Neue', sans-serif; font-size: .67rem; color: #c9901a; font-style: italic; }
+/* chart */
+#chartpan{background:#fffdf7;border-top:1px solid #d8cfc0;padding:.6rem .9rem;flex-shrink:0}
+#ctitle{font-family:'Helvetica Neue',sans-serif;font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6b5e52;margin-bottom:.4rem}
+#cw{position:relative;height:105px}
 
-  #viewDiv { flex: 1; min-height: 0; }
+/* loading spinner */
+#loader{position:absolute;inset:0;background:rgba(245,240,232,.9);display:flex;align-items:center;justify-content:center;z-index:50;flex-direction:column;gap:.75rem;pointer-events:none}
+#loader.hide{display:none}
+.spin{width:28px;height:28px;border:3px solid #d8cfc0;border-top-color:#4a7c4e;border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+#loader p{font-family:'Helvetica Neue',sans-serif;font-size:.8rem;color:#3d2b1f}
 
-  /* ArcGIS widget overrides */
-  .esri-attribution { font-size: 10px !important; }
-  .esri-zoom { top: 10px !important; }
-
-  /* ── LEGEND ── */
-  #legrow { background: #fffdf7; border-top: 1px solid #d8cfc0; padding: .45rem .9rem; display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; flex-shrink: 0; }
-  .ll { font-family: 'Helvetica Neue', sans-serif; font-size: .65rem; color: #6b5e52; text-transform: uppercase; letter-spacing: .07em; margin-right: 3px; }
-  .sw { width: 12px; height: 12px; border-radius: 2px; display: inline-block; flex-shrink: 0; }
-  .lt { font-family: 'Helvetica Neue', sans-serif; font-size: .63rem; color: #6b5e52; margin-right: 5px; }
-
-  /* ── CHART ── */
-  #chartpan { background: #fffdf7; border-top: 1px solid #d8cfc0; padding: .6rem .9rem; flex-shrink: 0; }
-  #ctitle { font-family: 'Helvetica Neue', sans-serif; font-size: .65rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: #6b5e52; margin-bottom: .4rem; }
-  #cw { position: relative; height: 105px; }
-
-  /* loading overlay */
-  #loader { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(245,240,232,.85); display: flex; align-items: center; justify-content: center; z-index: 99; font-family: 'Helvetica Neue', sans-serif; font-size: .85rem; color: #3d2b1f; gap: .75rem; pointer-events: none; }
-  #loader.hide { display: none; }
-  .spin { width: 20px; height: 20px; border: 2px solid #d8cfc0; border-top-color: #4a7c4e; border-radius: 50%; animation: spin .7s linear infinite; }
-  @keyframes spin { to { transform: rotate(360deg); } }
+/* ArcGIS overrides */
+.esri-popup__main-container{max-width:220px}
+.esri-popup__header-title{font-size:.85rem!important}
+.esri-attribution__powered-by{display:none}
 </style>
 </head>
 <body>
 <div id="app">
-
   <div id="hdr">
     <h1>Corn Yield &amp; Climate Change</h1>
-    <p>US Drought &amp; Temperature Stress · ArcGIS Interactive Investigation</p>
+    <p>US Drought &amp; Temperature Stress · ArcGIS REST Investigation</p>
   </div>
 
   <div id="body">
-
-    <!-- ── LEFT PANEL ── -->
+    <!-- LEFT PANEL -->
     <aside id="panel">
 
       <div class="blk">
@@ -127,7 +122,7 @@
             <button class="sb" onclick="loadScen('r85b',this)">RCP 8.5<br><small style="font-weight:400;font-size:.6rem">~2080</small></button>
           </div>
           <div class="no sci" style="margin-top:1px">
-            <strong>RCP</strong> = Representative Concentration Pathway. RCP 4.5 = moderate cuts; RCP 8.5 = high emissions. Standard IPCC scenarios used by USDA &amp; NOAA.
+            <strong>RCP</strong> = Representative Concentration Pathway. RCP 4.5 = moderate emissions cuts; RCP 8.5 = continued high fossil fuel use. Standard IPCC scenarios used by USDA &amp; NOAA.
           </div>
         </div>
       </div>
@@ -190,14 +185,14 @@
         <div class="bh">Investigate</div>
         <div class="bb" style="gap:.55rem">
           <div class="no q"><strong>Try this:</strong> Set rainfall to −150 mm and temp to +3 °C. Which states turn red first? Why are Kansas and Missouri more exposed than Iowa?</div>
-          <div class="no q"><strong>Then:</strong> Enable the irrigation offset. How does Nebraska change vs Kansas? What does this reveal about infrastructure as a climate adaptation strategy?</div>
-          <div class="no sci"><strong>Model sources:</strong> Baseline yields from USDA NASS 2019–2023. Water stress via FAO-56 Ks coefficient. Temperature response from Schlenker &amp; Roberts (2009). CO₂ effect from FACE meta-analysis — corn (C4 plant) shows ~6× weaker CO₂ response than wheat or soy. State geometry from Esri sampleserver6 ArcGIS REST service.</div>
+          <div class="no q"><strong>Then:</strong> Enable irrigation offset. How does Nebraska change vs Kansas? What does this reveal about infrastructure as a climate adaptation strategy?</div>
+          <div class="no sci"><strong>Model:</strong> Baseline from USDA NASS 2019–2023. Water stress via FAO-56 Ks. Temperature via Schlenker &amp; Roberts (2009). CO₂ via FACE meta-analysis — corn (C4) shows ~6× weaker CO₂ response than wheat. State polygons from US Census TIGERweb ArcGIS REST service.</div>
         </div>
       </div>
 
     </aside>
 
-    <!-- ── MAP SIDE ── -->
+    <!-- MAP SIDE -->
     <div id="mapside">
       <div id="toolbar">
         <div class="vrow">
@@ -205,30 +200,35 @@
           <button class="vb" id="vb-pct" onclick="setV('pct')">% change vs baseline</button>
           <button class="vb" id="vb-los" onclick="setV('los')">Yield change (bu/ac)</button>
         </div>
-        <span id="status">Loading ArcGIS features…</span>
+        <span id="status">Loading…</span>
         <span class="tn">Click a state for details</span>
       </div>
 
       <div id="viewDiv">
-        <div id="loader"><div class="spin"></div>Loading state boundaries from ArcGIS REST service…</div>
+        <div id="loader">
+          <div class="spin"></div>
+          <p>Querying US Census TIGERweb REST service…</p>
+        </div>
       </div>
 
       <div id="legrow"></div>
 
       <div id="chartpan">
         <div id="ctitle">Top 10 corn states — baseline vs projected yield (bu/ac)</div>
-        <div id="cw"><canvas id="bc" role="img" aria-label="Bar chart comparing baseline and projected corn yields for top 10 states"></canvas></div>
+        <div id="cw"><canvas id="bc"></canvas></div>
       </div>
     </div>
-
   </div>
 </div>
 
+<!-- Chart.js for bar chart only -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+
 <script>
-// ============================================================
-// STATE YIELD DATA  (USDA NASS 2019-2023 avg, PRISM rainfall)
-// ============================================================
+// ════════════════════════════════════════════════════════════
+//  YIELD DATA  –  USDA NASS 2019-2023 avg + PRISM rainfall
+//  Key = exact state name as returned by Census NAME field
+// ════════════════════════════════════════════════════════════
 const SD = {
   'Iowa':             {y:202,r:530,t:30.2,ip:.04},
   'Illinois':         {y:196,r:520,t:30.8,ip:.01},
@@ -289,27 +289,31 @@ const SCEN = {
   r85b: {r:-160,t:4.0,h:25, c:800},
 };
 
-// ── Yield model (FAO-56 Ks + Schlenker-Roberts 2009 + weak C4 CO2) ──
+// ════════════════════════════════════════════════════════════
+//  YIELD MODEL  (FAO-56 Ks + Schlenker-Roberts 2009 + C4 CO2)
+// ════════════════════════════════════════════════════════════
 function calcY(name, dr, dt, dh, co2, irr) {
   const s = SD[name];
   if (!s || s.y === 0) return null;
   const irrigOff = irr ? s.ip * Math.max(0, -dr) : 0;
-  const effRain = Math.max(0, s.r + dr + irrigOff);
+  const effRain  = Math.max(0, s.r + dr + irrigOff);
   const ETc = 550;
   const Ks = effRain >= ETc ? 1 : Math.max(0, 0.25 + 0.75 * (effRain / ETc));
   const newT = s.t + dt;
   let ts = 0;
   if (newT > 29) ts += Math.min(0.25, (newT - 29) * 0.028);
   ts += dh * 0.0085;
-  const co2g = Math.max(0, (co2 - 420) * 0.00006);
+  const co2g   = Math.max(0, (co2 - 420) * 0.00006);
   const stress = Math.min(0.80, (1 - Ks) * 0.65 + ts);
-  const proj = Math.max(20, s.y * (1 - stress) * (1 + co2g));
-  return {base: s.y, proj: Math.round(proj), pct: Math.round((proj - s.y) / s.y * 1000) / 10};
+  const proj   = Math.max(20, s.y * (1 - stress) * (1 + co2g));
+  return { base: s.y, proj: Math.round(proj), pct: Math.round((proj - s.y) / s.y * 1000) / 10 };
 }
 
-// ── App state ──
+// ════════════════════════════════════════════════════════════
+//  APP STATE
+// ════════════════════════════════════════════════════════════
 let VIEW = 'abs', PROJ = {}, selName = null, chartInst = null;
-let featureLayer = null, mapView = null;
+let statesLayer = null;   // ArcGIS FeatureLayer ref
 
 function getInputs() {
   return {
@@ -322,10 +326,10 @@ function getInputs() {
 }
 
 function recalc() {
-  const {dr, dt, dh, co2, irr} = getInputs();
+  const {dr,dt,dh,co2,irr} = getInputs();
   PROJ = {};
   Object.keys(SD).forEach(n => { PROJ[n] = calcY(n, dr, dt, dh, co2, irr); });
-  if (featureLayer) applyRenderer();
+  if (statesLayer) applyRenderer();
   buildLeg();
   updateSum();
   updateChart();
@@ -334,7 +338,7 @@ function recalc() {
 
 function onS() {
   document.querySelectorAll('.sb').forEach(b => b.classList.remove('on'));
-  document.getElementById('rv').textContent = (+document.getElementById('rs').value > 0 ? '+' : '') + document.getElementById('rs').value + ' mm';
+  document.getElementById('rv').textContent = (d=>( d>0?'+':'')+d+' mm')(+document.getElementById('rs').value);
   document.getElementById('tv').textContent = '+' + (+document.getElementById('ts').value).toFixed(1) + ' °C';
   document.getElementById('hv').textContent = '+' + document.getElementById('hs').value + ' days';
   document.getElementById('cv').textContent  = document.getElementById('cs').value + ' ppm';
@@ -349,10 +353,10 @@ function loadScen(k, btn) {
   document.getElementById('ts').value = sc.t;
   document.getElementById('hs').value = sc.h;
   document.getElementById('cs').value  = sc.c;
-  document.getElementById('rv').textContent = (sc.r > 0 ? '+' : '') + sc.r + ' mm';
-  document.getElementById('tv').textContent = '+' + sc.t.toFixed(1) + ' °C';
-  document.getElementById('hv').textContent = '+' + sc.h + ' days';
-  document.getElementById('cv').textContent  = sc.c + ' ppm';
+  document.getElementById('rv').textContent = (sc.r>0?'+':'')+sc.r+' mm';
+  document.getElementById('tv').textContent = '+'+sc.t.toFixed(1)+' °C';
+  document.getElementById('hv').textContent = '+'+sc.h+' days';
+  document.getElementById('cv').textContent  = sc.c+' ppm';
   recalc();
 }
 
@@ -360,106 +364,103 @@ function setV(v) {
   VIEW = v;
   document.querySelectorAll('.vb').forEach(b => b.classList.remove('on'));
   document.getElementById('vb-' + v).classList.add('on');
-  if (featureLayer) applyRenderer();
+  if (statesLayer) applyRenderer();
   buildLeg();
 }
 
-// ── Color interpolation ──
+// ════════════════════════════════════════════════════════════
+//  COLOR / RENDERER
+// ════════════════════════════════════════════════════════════
 const RAMPS = {
   abs: [[0,'#8B0000'],[80,'#d02020'],[120,'#f0803a'],[150,'#ffc870'],[170,'#fff3b0'],[185,'#c8e094'],[200,'#7dbc56'],[220,'#1a6b2a']],
   pct: [[-35,'#8B0000'],[-25,'#d02020'],[-15,'#f0803a'],[-8,'#ffd080'],[-2,'#fffacc'],[2,'#c8e094'],[15,'#1a6b2a']],
   los: [[-60,'#8B0000'],[-40,'#d02020'],[-25,'#f0803a'],[-12,'#ffd080'],[-4,'#fffacc'],[0,'#c8e094'],[20,'#1a6b2a']],
 };
-const LABELS = {
-  abs: 'Yield (bu/ac)',
-  pct: '% change vs baseline',
-  los: 'Yield change (bu/ac)',
-};
-function fmt(v) {
-  if (VIEW === 'abs') return v + ' bu/ac';
-  return (v > 0 ? '+' : '') + v + (VIEW === 'pct' ? '%' : ' bu/ac');
+const VLABELS = { abs:'Yield (bu/ac)', pct:'% change vs baseline', los:'Yield change (bu/ac)' };
+
+function fmtVal(v) {
+  if (VIEW==='abs') return v + ' bu/ac';
+  return (v>0?'+':'') + v + (VIEW==='pct' ? '%' : ' bu/ac');
 }
 
 function interpHex(a, b, t) {
-  const p = h => [parseInt(h.slice(1,3),16), parseInt(h.slice(3,5),16), parseInt(h.slice(5,7),16)];
-  const [r1,g1,b1] = p(a), [r2,g2,b2] = p(b);
-  return '#' + [r1+(r2-r1)*t, g1+(g2-g1)*t, b1+(b2-b1)*t].map(v => Math.round(v).toString(16).padStart(2,'0')).join('');
+  const h = s => [parseInt(s.slice(1,3),16), parseInt(s.slice(3,5),16), parseInt(s.slice(5,7),16)];
+  const [r1,g1,b1]=h(a), [r2,g2,b2]=h(b);
+  return '#'+[r1+(r2-r1)*t, g1+(g2-g1)*t, b1+(b2-b1)*t].map(v=>Math.round(v).toString(16).padStart(2,'0')).join('');
 }
 
 function colorFor(name) {
   const d = PROJ[name];
   if (!d) return '#cccccc';
-  const val = VIEW === 'abs' ? d.proj : VIEW === 'pct' ? d.pct : (d.proj - d.base);
+  const val = VIEW==='abs' ? d.proj : VIEW==='pct' ? d.pct : (d.proj - d.base);
   const stops = RAMPS[VIEW];
-  for (let i = 0; i < stops.length - 1; i++) {
+  for (let i=0; i<stops.length-1; i++) {
     if (val <= stops[i+1][0]) {
-      const t = (val - stops[i][0]) / (stops[i+1][0] - stops[i][0]);
-      return interpHex(stops[i][1], stops[i+1][1], Math.max(0, Math.min(1, t)));
+      const t = Math.max(0, Math.min(1, (val-stops[i][0]) / (stops[i+1][0]-stops[i][0])));
+      return interpHex(stops[i][1], stops[i+1][1], t);
     }
   }
-  return stops[stops.length - 1][1];
+  return stops[stops.length-1][1];
 }
 
-// ── ArcGIS renderer from current PROJ ──
+function hexToEsriColor(hex, alpha=220) {
+  return [parseInt(hex.slice(1,3),16), parseInt(hex.slice(3,5),16), parseInt(hex.slice(5,7),16), alpha];
+}
+
+// Build a UniqueValueRenderer keyed on the NAME field
+// Each state gets a fill color from our yield model
 function makeRenderer() {
-  const uniqueValues = [];
-  Object.keys(SD).forEach(name => {
-    const col = colorFor(name);
-    uniqueValues.push({
-      value: name,
-      symbol: {
-        type: 'simple-fill',
-        color: hexToRgba(col, 0.85),
-        outline: { color: [255, 253, 247, 200], width: 0.6 }
-      }
-    });
-  });
+  const infos = Object.keys(SD).map(name => ({
+    value: name,
+    symbol: {
+      type: 'simple-fill',
+      color: hexToEsriColor(colorFor(name)),
+      outline: { color: [80, 60, 40, 180], width: 0.5 }
+    }
+  }));
   return {
     type: 'unique-value',
-    field: 'state_name',
+    field: 'NAME',
     defaultSymbol: {
       type: 'simple-fill',
-      color: [200, 200, 200, 100],
-      outline: { color: [255, 253, 247, 200], width: 0.6 }
+      color: [200,200,200,120],
+      outline: { color: [80,60,40,100], width: 0.5 }
     },
-    uniqueValueInfos: uniqueValues
+    uniqueValueInfos: infos
   };
 }
 
-function hexToRgba(hex, alpha) {
-  const r = parseInt(hex.slice(1,3),16);
-  const g = parseInt(hex.slice(3,5),16);
-  const b = parseInt(hex.slice(5,7),16);
-  return [r, g, b, Math.round(alpha * 255)];
-}
-
 function applyRenderer() {
-  if (!featureLayer) return;
-  featureLayer.renderer = makeRenderer();
+  if (statesLayer) statesLayer.renderer = makeRenderer();
 }
 
-// ── Legend ──
+// ════════════════════════════════════════════════════════════
+//  LEGEND
+// ════════════════════════════════════════════════════════════
 function buildLeg() {
   const stops = RAMPS[VIEW];
   const row = document.getElementById('legrow');
-  row.innerHTML = `<span class="ll">${LABELS[VIEW]}:</span>`;
+  row.innerHTML = `<span class="ll">${VLABELS[VIEW]}:</span>`;
   stops.forEach(([val, col], i) => {
     const sw = document.createElement('span');
-    sw.className = 'sw'; sw.style.background = col;
-    row.appendChild(sw);
-    if (i === 0 || i === Math.floor(stops.length / 2) || i === stops.length - 1) {
+    sw.className = 'sw'; sw.style.background = col; row.appendChild(sw);
+    if (i===0 || i===Math.floor(stops.length/2) || i===stops.length-1) {
       const t = document.createElement('span');
-      t.className = 'lt'; t.textContent = fmt(val);
-      row.appendChild(t);
+      t.className = 'lt'; t.textContent = fmtVal(val); row.appendChild(t);
     }
   });
 }
 
-// ── State detail panel ──
+// ════════════════════════════════════════════════════════════
+//  STATE DETAIL PANEL
+// ════════════════════════════════════════════════════════════
 function showDetail(name) {
   const s = SD[name], d = PROJ[name];
-  if (!s || !d) return;
-  const loss = d.proj - d.base;
+  if (!s || !d) {
+    document.getElementById('sdet').innerHTML = `<div class="sdn">${name}</div><div class="sdr"><span class="sdk">No yield data for this state</span></div>`;
+    return;
+  }
+  const loss  = d.proj - d.base;
   const rDelta = +document.getElementById('rs').value;
   document.getElementById('sdet').innerHTML = `
     <div class="sdn">${name}</div>
@@ -467,25 +468,31 @@ function showDetail(name) {
     <div class="sdr"><span class="sdk">Projected yield</span><span class="sdv ${loss<0?'neg':'pos'}">${d.proj} bu/ac</span></div>
     <div class="sdr"><span class="sdk">Change</span><span class="sdv ${loss<0?'neg':'pos'}">${loss>0?'+':''}${loss} bu/ac (${d.pct>0?'+':''}${d.pct.toFixed(1)}%)</span></div>
     <div class="sdr"><span class="sdk">Baseline rainfall Apr–Sep</span><span class="sdv">${s.r} mm</span></div>
-    <div class="sdr"><span class="sdk">Projected rainfall</span><span class="sdv ${rDelta<-50?'neg':''}">${s.r + rDelta} mm</span></div>
+    <div class="sdr"><span class="sdk">Projected rainfall</span><span class="sdv ${rDelta<-50?'neg':''}">${s.r+rDelta} mm</span></div>
     <div class="sdr"><span class="sdk">Irrigation coverage</span><span class="sdv">${Math.round(s.ip*100)}%</span></div>
     <div class="sdr"><span class="sdk">Avg max temp (baseline)</span><span class="sdv">${s.t.toFixed(1)} °C</span></div>`;
 }
 
-// ── National summary ──
-const MAIN_STATES = ['Iowa','Illinois','Nebraska','Indiana','Minnesota','Ohio','Wisconsin','South Dakota','Kansas','Missouri','North Dakota','Michigan','Texas','Oklahoma','Kentucky','Tennessee','Mississippi','Arkansas','Pennsylvania','New York'];
+// ════════════════════════════════════════════════════════════
+//  NATIONAL SUMMARY
+// ════════════════════════════════════════════════════════════
+const MAIN = ['Iowa','Illinois','Nebraska','Indiana','Minnesota','Ohio','Wisconsin',
+              'South Dakota','Kansas','Missouri','North Dakota','Michigan',
+              'Texas','Oklahoma','Kentucky','Tennessee','Mississippi','Arkansas','Pennsylvania','New York'];
 function updateSum() {
-  let tp = 0, tb = 0, n = 0;
-  MAIN_STATES.forEach(name => { const d = PROJ[name]; if (d) { tp += d.proj; tb += d.base; n++; } });
-  const ap = Math.round(tp/n), ab = Math.round(tb/n), ch = ap - ab, pct = Math.round(ch/ab*100);
-  const prod = ((ap * 90) / 1e9).toFixed(1);
-  const ny = document.getElementById('ny'); ny.textContent = ap; ny.className = 'mv' + (ch < 0 ? ' loss' : ch > 0 ? ' gain' : '');
-  const nc = document.getElementById('nc'); nc.textContent = (ch>0?'+':'') + ch + ' bu/ac'; nc.className = 'mv' + (ch < 0 ? ' loss' : ch > 0 ? ' gain' : '');
-  const np = document.getElementById('np'); np.textContent = (pct>0?'+':'') + pct + '%'; np.className = 'mv' + (pct < 0 ? ' loss' : pct > 0 ? ' gain' : '');
-  document.getElementById('nprod').textContent = prod + 'B bu';
+  let tp=0, tb=0, n=0;
+  MAIN.forEach(name => { const d=PROJ[name]; if(d){ tp+=d.proj; tb+=d.base; n++; }});
+  const ap=Math.round(tp/n), ab=Math.round(tb/n), ch=ap-ab, pct=Math.round(ch/ab*100);
+  const prod = ((ap*90)/1e9).toFixed(1);
+  const ny=document.getElementById('ny'); ny.textContent=ap; ny.className='mv'+(ch<0?' loss':ch>0?' gain':'');
+  const nc=document.getElementById('nc'); nc.textContent=(ch>0?'+':'')+ch+' bu/ac'; nc.className='mv'+(ch<0?' loss':ch>0?' gain':'');
+  const np=document.getElementById('np'); np.textContent=(pct>0?'+':'')+pct+'%'; np.className='mv'+(pct<0?' loss':pct>0?' gain':'');
+  document.getElementById('nprod').textContent = prod+'B bu';
 }
 
-// ── Bar chart ──
+// ════════════════════════════════════════════════════════════
+//  BAR CHART
+// ════════════════════════════════════════════════════════════
 const TOP10 = ['Iowa','Illinois','Nebraska','Indiana','Minnesota','Ohio','Wisconsin','Kansas','Missouri','North Dakota'];
 function updateChart() {
   const lbls = TOP10.map(n => n.replace('North ','N.').replace('South ','S.'));
@@ -495,109 +502,127 @@ function updateChart() {
   chartInst = new Chart(document.getElementById('bc'), {
     type: 'bar',
     data: { labels: lbls, datasets: [
-      { label: 'Baseline (USDA NASS)', data: bdat, backgroundColor: 'rgba(74,124,78,.2)', borderColor: '#4a7c4e', borderWidth: 1.5 },
+      { label: 'Baseline (USDA NASS)', data: bdat,
+        backgroundColor: 'rgba(74,124,78,.2)', borderColor: '#4a7c4e', borderWidth: 1.5 },
       { label: 'Projected', data: pdat,
-        backgroundColor: pdat.map((p,i) => p < bdat[i] ? 'rgba(184,74,44,.7)' : 'rgba(74,124,78,.7)'),
-        borderColor: pdat.map((p,i) => p < bdat[i] ? '#b84a2c' : '#4a7c4e'), borderWidth: 1.5 },
+        backgroundColor: pdat.map((p,i) => p<bdat[i] ? 'rgba(184,74,44,.7)' : 'rgba(74,124,78,.7)'),
+        borderColor:      pdat.map((p,i) => p<bdat[i] ? '#b84a2c' : '#4a7c4e'),
+        borderWidth: 1.5 },
     ]},
-    options: { responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => c.dataset.label + ': ' + c.parsed.y + ' bu/ac' } } },
-      scales: {
-        x: { ticks: { font: { size: 9 }, color: '#6b5e52', autoSkip: false, maxRotation: 35 }, grid: { display: false } },
-        y: { ticks: { font: { size: 9 }, color: '#6b5e52' }, grid: { color: 'rgba(0,0,0,.05)' } },
+    options: { responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label: c => c.dataset.label+': '+c.parsed.y+' bu/ac' }}},
+      scales:{
+        x:{ ticks:{font:{size:9},color:'#6b5e52',autoSkip:false,maxRotation:35}, grid:{display:false} },
+        y:{ ticks:{font:{size:9},color:'#6b5e52'}, grid:{color:'rgba(0,0,0,.05)'} },
       }
     }
   });
 }
 
-// ============================================================
-// ArcGIS JS API  —  MapView + FeatureLayer from REST service
-// ============================================================
+// ════════════════════════════════════════════════════════════
+//  ARCGIS MAPS SDK — MapView + FeatureLayer
+//
+//  Source: US Census Bureau TIGERweb REST service
+//  URL:    https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/USLandmass/MapServer/0
+//  Layer:  States (ID 0) — Min/Max Scale = 0 (no scale restriction)
+//  Field:  NAME  (full state name, e.g. "Iowa", "Kansas")
+// ════════════════════════════════════════════════════════════
 require([
   'esri/Map',
   'esri/views/MapView',
   'esri/layers/FeatureLayer',
   'esri/widgets/Home',
   'esri/widgets/ScaleBar',
-], function(Map, MapView, FeatureLayer, Home, ScaleBar) {
+  'esri/core/reactiveUtils',
+], function(Map, MapView, FeatureLayer, Home, ScaleBar, reactiveUtils) {
 
-  // ── States layer from Esri sampleserver6 Census MapServer (layer 3 = States) ──
-  // Field: state_name  (confirmed from Esri API docs)
-  featureLayer = new FeatureLayer({
-    url: 'https://sampleserver6.arcgisonline.com/arcgis/rest/services/Census/MapServer/3',
-    outFields: ['state_name'],
+  // ── FeatureLayer from Census TIGERweb ──
+  statesLayer = new FeatureLayer({
+    // USLandmass/MapServer/0 = States, no scale restrictions, NAME field
+    url: 'https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/USLandmass/MapServer/0',
+    outFields: ['NAME', 'STUSAB'],
     renderer: makeRenderer(),
-    popupEnabled: false,  // we handle clicks ourselves
+    opacity: 1,
+    popupEnabled: false,    // we drive popups manually
+    effect: null,
   });
 
   const map = new Map({
     basemap: 'gray-vector',
-    layers: [featureLayer],
+    layers: [statesLayer],
   });
 
-  mapView = new MapView({
+  const view = new MapView({
     container: 'viewDiv',
     map: map,
-    center: [-96, 38.5],
+    center: [-96, 39],
     zoom: 4,
+    constraints: { minZoom: 3, maxZoom: 8 },
+    popup: {
+      dockEnabled: false,
+      dockOptions: { buttonEnabled: false },
+      collapseEnabled: false,
+      autoCloseEnabled: true,
+    },
     ui: { components: ['zoom', 'attribution'] },
-    highlightOptions: { color: [255, 255, 255], fillOpacity: 0.15, haloOpacity: 0.9 },
+    highlightOptions: {
+      color:       [255, 255, 255],
+      fillOpacity: 0.08,
+      haloOpacity: 0.8,
+    },
   });
 
-  // ── Widgets ──
-  mapView.ui.add(new Home({ view: mapView }), 'top-left');
-  mapView.ui.add(new ScaleBar({ view: mapView, unit: 'imperial' }), 'bottom-right');
+  // widgets
+  view.ui.add(new Home({ view }), 'top-left');
+  view.ui.add(new ScaleBar({ view, unit: 'imperial' }), 'bottom-right');
 
-  // ── Hide loader once layer loads ──
-  featureLayer.when(() => {
+  // ── Hide loader when layer loads ──
+  statesLayer.when(() => {
     document.getElementById('loader').classList.add('hide');
-    document.getElementById('status').textContent = 'ArcGIS REST service loaded ✓';
-    setTimeout(() => { document.getElementById('status').textContent = ''; }, 3000);
+    document.getElementById('status').textContent = 'Census TIGERweb loaded ✓';
+    setTimeout(() => { document.getElementById('status').textContent = ''; }, 3500);
   }).catch(err => {
     document.getElementById('loader').classList.add('hide');
-    document.getElementById('status').textContent = 'Error loading service: ' + err.message;
-    console.error(err);
+    document.getElementById('status').textContent = '⚠ Service error — ' + (err.message || err);
+    console.error('FeatureLayer error:', err);
   });
 
-  // ── Click handler ──
+  // ── Click: select state, populate detail panel ──
   let highlight = null;
-  mapView.on('click', async (event) => {
-    if (highlight) { highlight.remove(); highlight = null; }
-    const response = await mapView.hitTest(event, { include: [featureLayer] });
-    if (!response.results.length) return;
-    const graphic = response.results[0].graphic;
-    const name = graphic.attributes.state_name;
+  view.on('click', async event => {
+    const res = await view.hitTest(event, { include: [statesLayer] });
+    if (!res.results.length) return;
+    const g    = res.results[0].graphic;
+    const name = g.attributes.NAME;
     if (!name) return;
     selName = name;
     showDetail(name);
-    // Highlight clicked state
-    const lv = mapView.layerViews.find(lv => lv.layer === featureLayer);
-    if (lv) highlight = lv.highlight(graphic);
+    // highlight
+    if (highlight) highlight.remove();
+    const lv = await view.whenLayerView(statesLayer);
+    highlight = lv.highlight(g);
   });
 
-  // ── Hover tooltip using ArcGIS popup-like approach ──
-  let moveHandler = null;
-  mapView.on('pointer-move', async (event) => {
-    const response = await mapView.hitTest(event, { include: [featureLayer] });
-    if (response.results.length) {
-      const name = response.results[0].graphic.attributes.state_name;
-      const d = PROJ[name];
-      if (d) {
-        const loss = d.proj - d.base;
-        mapView.cursor = 'pointer';
-        mapView.openPopup({
-          title: name,
-          content: `Baseline: <b>${d.base} bu/ac</b><br>Projected: <b>${d.proj} bu/ac</b><br>Change: <b>${loss>0?'+':''}${loss} bu/ac (${d.pct>0?'+':''}${d.pct.toFixed(1)}%)</b>`,
-          location: event.mapPoint,
-        });
-      }
-    } else {
-      mapView.cursor = 'default';
-      mapView.closePopup();
-    }
+  // ── Hover: show popup ──
+  view.on('pointer-move', async event => {
+    const res = await view.hitTest(event, { include: [statesLayer] });
+    if (!res.results.length) { view.cursor = 'default'; return; }
+    const g    = res.results[0].graphic;
+    const name = g.attributes.NAME;
+    const d    = PROJ[name];
+    if (!d) return;
+    view.cursor = 'pointer';
+    const loss = d.proj - d.base;
+    view.popup.open({
+      title: name,
+      content: `Baseline: <b>${d.base} bu/ac</b><br>
+                Projected: <b>${d.proj} bu/ac</b><br>
+                Change: <b>${loss>0?'+':''}${loss} bu/ac (${d.pct>0?'+':''}${d.pct.toFixed(1)}%)</b>`,
+      location: event.mapPoint,
+    });
   });
 
-  // ── Initial state ──
+  // ── Initial calculation ──
   recalc();
   buildLeg();
   updateSum();
