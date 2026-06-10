@@ -50,7 +50,7 @@ input[type=range]{width:100%;accent-color:#4a7c4e;cursor:pointer;height:4px}
 .vb{padding:3px 10px;border:1px solid #d8cfc0;background:transparent;border-radius:20px;font-family:'Helvetica Neue',sans-serif;font-size:.67rem;font-weight:700;cursor:pointer;color:#6b5e52;transition:all .15s}
 .vb:hover{border-color:#4a7c4e;color:#4a7c4e}.vb.on{background:#4a7c4e;border-color:#4a7c4e;color:#fff}
 .tn{font-family:'Helvetica Neue',sans-serif;font-size:.67rem;color:#aaa;margin-left:auto}
-#viewDiv{flex:1;min-height:0}
+#viewDiv{flex:1;min-height:0;position:relative}
 #legrow{background:#fffdf7;border-top:1px solid #d8cfc0;padding:.45rem .9rem;display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;flex-shrink:0}
 .ll{font-family:'Helvetica Neue',sans-serif;font-size:.65rem;color:#6b5e52;text-transform:uppercase;letter-spacing:.07em;margin-right:3px}
 .sw{width:12px;height:12px;border-radius:2px;display:inline-block;flex-shrink:0}
@@ -571,7 +571,9 @@ require([
   'esri/layers/GeoJSONLayer',
   'esri/widgets/Home',
   'esri/widgets/ScaleBar',
-], function(Map, MapView, GeoJSONLayer, Home, ScaleBar) {
+  'esri/Basemap',
+  'esri/layers/WebTileLayer',
+], function(Map, MapView, GeoJSONLayer, Home, ScaleBar, Basemap, WebTileLayer) {
   logInfo('require() callback — SDK loaded OK');
   logInfo('Map: ' + typeof Map + ', MapView: ' + typeof MapView + ', GeoJSONLayer: ' + typeof GeoJSONLayer);
 
@@ -605,8 +607,18 @@ require([
 
   logInfo('GeoJSONLayer created');
 
-  const map = new Map({ basemap: 'osm', layers: [geoLayer] });
-  logInfo('Map created with osm basemap (no API key required)');
+  // Build an OSM basemap using WebTileLayer — no API key required
+  const osmBasemap = new Basemap({
+    baseLayers: [new WebTileLayer({
+      urlTemplate: 'https://{subDomain}.tile.openstreetmap.org/{level}/{col}/{row}.png',
+      subDomains: ['a','b','c'],
+      copyright: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    })],
+    title: 'OpenStreetMap',
+    id: 'osm-notile',
+  });
+  const map = new Map({ basemap: osmBasemap, layers: [geoLayer] });
+  logInfo('Map created — OSM WebTileLayer basemap (no API key)');
 
   const view = new MapView({
     container: 'viewDiv',
@@ -614,6 +626,7 @@ require([
     center: [-96, 39],
     zoom: 4,
     constraints: { minZoom: 3, maxZoom: 9 },
+    background: { color: [232, 228, 216] },
     ui: { components: ['zoom','attribution'] },
     highlightOptions: { color:[255,255,255], fillOpacity:0.1, haloOpacity:0.9 },
   });
@@ -655,22 +668,36 @@ require([
     hl = lv.highlight(g);
   });
 
-  // ── Hover: popup ──
+  // ── Hover: custom HTML tooltip (avoids deprecated view.popup API) ──
+  const tip = document.createElement('div');
+  tip.style.cssText = 'position:absolute;pointer-events:none;background:#3d2b1f;color:#f5f0e8;border-radius:6px;padding:7px 11px;font-family:"Helvetica Neue",sans-serif;font-size:.75rem;line-height:1.5;white-space:nowrap;display:none;z-index:50;box-shadow:0 2px 8px rgba(0,0,0,.4)';
+  document.getElementById('viewDiv').appendChild(tip);
+
   view.on('pointer-move', async event => {
     const res = await view.hitTest(event, {include:[geoLayer]});
-    if (!res.results.length) { view.cursor='default'; view.closePopup(); return; }
+    if (!res.results.length) {
+      view.cursor = 'default';
+      tip.style.display = 'none';
+      return;
+    }
     const g    = res.results[0].graphic;
     const name = g.attributes.name;
     const d    = PROJ[name];
-    if (!d) return;
+    if (!d) { tip.style.display='none'; return; }
     view.cursor = 'pointer';
     const loss = d.proj - d.base;
-    view.popup.open({
-      title: `<b>${name}</b>`,
-      content: `Baseline: <b>${d.base} bu/ac</b> &nbsp;→&nbsp; Projected: <b>${d.proj} bu/ac</b><br>Change: <b style="color:${loss<0?'#b84a2c':'#4a7c4e'}">${loss>0?'+':''}${loss} bu/ac (${d.pct>0?'+':''}${d.pct.toFixed(1)}%)</b>`,
-      location: event.mapPoint,
-    });
+    tip.innerHTML = `<strong>${name}</strong><br>Baseline: ${d.base} bu/ac &nbsp;→&nbsp; Projected: ${d.proj} bu/ac<br>Change: <span style="color:${loss<0?'#ff8080':'#90ffa0'}">${loss>0?'+':''}${loss} bu/ac (${d.pct>0?'+':''}${d.pct.toFixed(1)}%)</span>`;
+    const rect = document.getElementById('viewDiv').getBoundingClientRect();
+    let x = event.native.clientX - rect.left + 14;
+    let y = event.native.clientY - rect.top  - 12;
+    if (x + 240 > rect.width)  x -= 260;
+    if (y + 80  > rect.height) y -= 90;
+    tip.style.left    = x + 'px';
+    tip.style.top     = y + 'px';
+    tip.style.display = 'block';
   });
+
+  view.on('pointer-leave', () => { tip.style.display = 'none'; });
 
   // Override rebuildLayer to also update renderer
   const origRecalc = recalc;
