@@ -1,0 +1,1606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CropSight — Precision Agriculture Lab</title>
+<link rel="stylesheet" href="https://unpkg.com/@esri/calcite-components/dist/calcite/calcite.css" />
+<script type="module" src="https://unpkg.com/@esri/calcite-components/dist/calcite/calcite.esm.js"></script>
+<link rel="stylesheet" href="https://js.arcgis.com/4.29/esri/themes/light/main.css">
+<script src="https://js.arcgis.com/4.29/"></script>
+<style>
+  :root {
+    --green-dark: #1a4a2e;
+    --green-mid: #2d7a4f;
+    --green-light: #4daa72;
+    --green-pale: #d4edda;
+    --amber: #e8a020;
+    --amber-pale: #fff3cd;
+    --sky: #1a6896;
+    --sky-pale: #d0e8f5;
+    --soil: #7a4f2d;
+    --soil-pale: #f5e6d4;
+    --text: #1a1a1a;
+    --text-muted: #555;
+    --surface: #ffffff;
+    --surface-alt: #f5f7f2;
+    --border: #d0d9c8;
+    --radius: 10px;
+    --shadow: 0 2px 12px rgba(0,0,0,0.08);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Georgia', serif;
+    background: var(--surface-alt);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* === TOP BAR === */
+  .topbar {
+    background: var(--green-dark);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 2rem;
+    height: 56px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .topbar-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 1.15rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+  .topbar-brand .leaf { font-size: 1.4rem; }
+  .topbar-subtitle {
+    font-size: 0.75rem;
+    opacity: 0.7;
+    font-family: 'Helvetica Neue', sans-serif;
+    font-weight: 400;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .topbar-nav {
+    display: flex;
+    gap: 4px;
+  }
+  .nav-btn {
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.25);
+    color: rgba(255,255,255,0.85);
+    padding: 5px 14px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    font-family: 'Helvetica Neue', sans-serif;
+    transition: all 0.2s;
+  }
+  .nav-btn:hover, .nav-btn.active {
+    background: rgba(255,255,255,0.15);
+    color: white;
+  }
+  .nav-btn.active {
+    background: var(--green-light);
+    border-color: var(--green-light);
+  }
+  .xp-badge {
+    background: var(--amber);
+    color: white;
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: 0.75rem;
+    font-family: 'Helvetica Neue', sans-serif;
+    font-weight: 600;
+  }
+
+  /* === SECTIONS === */
+  .section { display: none; padding: 2rem; max-width: 1100px; margin: 0 auto; }
+  .section.active { display: block; }
+
+  /* === HERO CARD === */
+  .hero {
+    background: linear-gradient(135deg, var(--green-dark) 0%, var(--green-mid) 100%);
+    border-radius: 16px;
+    color: white;
+    padding: 2.5rem 3rem;
+    margin-bottom: 2rem;
+    display: flex;
+    gap: 3rem;
+    align-items: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    right: -40px;
+    top: -40px;
+    width: 250px;
+    height: 250px;
+    background: rgba(255,255,255,0.04);
+    border-radius: 50%;
+  }
+  .hero-text { flex: 1; }
+  .hero-eyebrow {
+    font-family: 'Helvetica Neue', sans-serif;
+    font-size: 0.7rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    opacity: 0.7;
+    margin-bottom: 0.5rem;
+  }
+  .hero h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1.2;
+    margin-bottom: 0.75rem;
+  }
+  .hero p {
+    font-family: 'Helvetica Neue', sans-serif;
+    font-size: 0.95rem;
+    opacity: 0.85;
+    line-height: 1.6;
+    max-width: 480px;
+  }
+  .hero-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    min-width: 180px;
+  }
+  .stat-chip {
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 10px;
+    padding: 0.75rem 1rem;
+    text-align: center;
+  }
+  .stat-chip .num { font-size: 1.6rem; font-weight: 700; }
+  .stat-chip .lbl {
+    font-family: 'Helvetica Neue', sans-serif;
+    font-size: 0.7rem;
+    opacity: 0.7;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  /* === MODULE CARDS === */
+  .modules-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+  .module-card {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.25rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .module-card:hover {
+    border-color: var(--green-mid);
+    box-shadow: var(--shadow);
+    transform: translateY(-2px);
+  }
+  .module-card.locked { opacity: 0.5; cursor: not-allowed; }
+  .module-card.completed { border-color: var(--green-light); }
+  .module-card .mod-icon {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+    display: block;
+  }
+  .module-card h3 {
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+    color: var(--green-dark);
+  }
+  .module-card p {
+    font-family: 'Helvetica Neue', sans-serif;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    line-height: 1.5;
+  }
+  .mod-badge {
+    position: absolute;
+    top: 10px; right: 10px;
+    font-size: 0.65rem;
+    font-family: 'Helvetica Neue', sans-serif;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .badge-new { background: var(--green-pale); color: var(--green-dark); }
+  .badge-done { background: var(--green-mid); color: white; }
+  .badge-lock { background: #e0e0e0; color: #888; }
+
+  /* === MAP === */
+  #mapview {
+    height: 460px;
+    border-radius: var(--radius);
+    border: 2px solid var(--border);
+    overflow: hidden;
+    margin-bottom: 1.5rem;
+  }
+  .map-controls {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+  }
+  .ctrl-btn {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    color: var(--green-dark);
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-family: 'Helvetica Neue', sans-serif;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.18s;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .ctrl-btn:hover { background: var(--green-pale); border-color: var(--green-mid); }
+  .ctrl-btn.active { background: var(--green-mid); color: white; border-color: var(--green-mid); }
+  .legend-bar {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.6rem 1rem;
+    font-size: 0.78rem;
+    font-family: 'Helvetica Neue', sans-serif;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+  }
+  .legend-bar .lbl { color: var(--text-muted); font-weight: 600; margin-right: 0.25rem; }
+  .swatch { width: 14px; height: 14px; border-radius: 3px; display: inline-block; vertical-align: middle; margin-right: 4px; }
+
+  /* === INFO PANEL === */
+  .info-panel {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.25rem;
+    font-family: 'Helvetica Neue', sans-serif;
+    font-size: 0.85rem;
+  }
+  .info-panel h3 { font-size: 0.9rem; font-weight: 700; margin-bottom: 0.75rem; color: var(--green-dark); }
+  .info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .info-row:last-child { border-bottom: none; }
+  .info-row .key { color: var(--text-muted); }
+  .info-row .val { font-weight: 600; }
+  .val.good { color: var(--green-mid); }
+  .val.warn { color: var(--amber); }
+  .val.bad { color: #c0392b; }
+
+  /* === DRONE PLANNER === */
+  .drone-canvas-wrap {
+    position: relative;
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    background: #e8f0e8;
+    cursor: crosshair;
+    margin-bottom: 1rem;
+  }
+  #droneCanvas { display: block; width: 100%; }
+  .drone-controls {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+    align-items: center;
+  }
+  .param-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-family: 'Helvetica Neue', sans-serif;
+    font-size: 0.8rem;
+  }
+  .param-group label { color: var(--text-muted); white-space: nowrap; }
+  .param-group input[type=range] { width: 80px; }
+  .param-group span { font-weight: 700; color: var(--green-dark); min-width: 2.5em; text-align: right; }
+  .drone-stat-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+  }
+  .drone-stat {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.75rem;
+    text-align: center;
+    font-family: 'Helvetica Neue', sans-serif;
+  }
+  .drone-stat .ds-num { font-size: 1.3rem; font-weight: 700; color: var(--sky); }
+  .drone-stat .ds-lbl { font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; }
+
+  /* === NDVI SIMULATOR === */
+  .ndvi-wrap {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+  .ndvi-canvas-box {
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    background: #111;
+  }
+  .ndvi-canvas-box canvas { display: block; width: 100%; }
+  .ndvi-canvas-box .canvas-label {
+    background: rgba(0,0,0,0.6);
+    color: white;
+    font-family: 'Helvetica Neue', sans-serif;
+    font-size: 0.7rem;
+    padding: 4px 10px;
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+  .ndvi-slider-group {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.25rem;
+    font-family: 'Helvetica Neue', sans-serif;
+  }
+  .ndvi-slider-group h4 { font-size: 0.85rem; font-weight: 700; color: var(--green-dark); margin-bottom: 1rem; }
+  .slider-row { margin-bottom: 1rem; }
+  .slider-row label { display: flex; justify-content: space-between; font-size: 0.78rem; color: var(--text-muted); margin-bottom: 4px; }
+  .slider-row label strong { color: var(--text); }
+  .slider-row input[type=range] { width: 100%; }
+  .yield-forecast-card {
+    background: var(--green-dark);
+    color: white;
+    border-radius: var(--radius);
+    padding: 1.25rem;
+    text-align: center;
+    margin-top: 1rem;
+    font-family: 'Helvetica Neue', sans-serif;
+  }
+  .yield-forecast-card .yfc-lbl { font-size: 0.7rem; opacity: 0.7; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.4rem; }
+  .yield-forecast-card .yfc-num { font-size: 2.5rem; font-weight: 700; line-height: 1; }
+  .yield-forecast-card .yfc-unit { font-size: 0.8rem; opacity: 0.7; margin-top: 0.25rem; }
+
+  /* === QUIZ === */
+  .quiz-card {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.5rem 2rem;
+    margin-bottom: 1.25rem;
+  }
+  .quiz-q {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 1.25rem;
+    line-height: 1.5;
+  }
+  .quiz-q .q-num {
+    font-family: 'Helvetica Neue', sans-serif;
+    font-size: 0.7rem;
+    background: var(--green-pale);
+    color: var(--green-dark);
+    padding: 2px 8px;
+    border-radius: 10px;
+    margin-right: 8px;
+    vertical-align: middle;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .quiz-options { display: flex; flex-direction: column; gap: 0.6rem; }
+  .quiz-opt {
+    background: var(--surface-alt);
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    padding: 0.7rem 1rem;
+    cursor: pointer;
+    font-family: 'Helvetica Neue', sans-serif;
+    font-size: 0.88rem;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .quiz-opt:hover:not(.answered) { border-color: var(--green-mid); background: var(--green-pale); }
+  .quiz-opt.correct { background: var(--green-pale); border-color: var(--green-mid); color: var(--green-dark); }
+  .quiz-opt.wrong { background: #fdecea; border-color: #e57373; color: #c0392b; }
+  .quiz-opt .opt-letter {
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    background: var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.72rem;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .quiz-opt.correct .opt-letter { background: var(--green-mid); color: white; }
+  .quiz-opt.wrong .opt-letter { background: #e57373; color: white; }
+  .quiz-feedback {
+    margin-top: 0.75rem;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    font-family: 'Helvetica Neue', sans-serif;
+    font-size: 0.83rem;
+    line-height: 1.5;
+    display: none;
+  }
+  .quiz-feedback.visible { display: block; }
+  .quiz-feedback.correct { background: var(--green-pale); color: var(--green-dark); border-left: 3px solid var(--green-mid); }
+  .quiz-feedback.wrong { background: #fdecea; color: #922b21; border-left: 3px solid #e57373; }
+
+  /* === DATA TABLE === */
+  .data-table-wrap { overflow-x: auto; margin-bottom: 1.5rem; }
+  table { width: 100%; border-collapse: collapse; font-family: 'Helvetica Neue', sans-serif; font-size: 0.83rem; }
+  th {
+    background: var(--green-dark);
+    color: white;
+    padding: 9px 14px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.75rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  td { padding: 8px 14px; border-bottom: 1px solid var(--border); }
+  tr:hover td { background: var(--green-pale); }
+  .td-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .td-bar .bar-fill {
+    height: 8px;
+    border-radius: 4px;
+    min-width: 4px;
+    background: var(--green-mid);
+  }
+
+  /* === SECTION TITLE === */
+  .section-head {
+    display: flex;
+    align-items: flex-end;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    border-bottom: 2px solid var(--green-pale);
+    padding-bottom: 0.75rem;
+  }
+  .section-head h2 {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--green-dark);
+  }
+  .section-head .sub {
+    font-family: 'Helvetica Neue', sans-serif;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-bottom: 2px;
+  }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+  .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; }
+
+  /* === CALLOUT BOX === */
+  .callout {
+    border-radius: var(--radius);
+    padding: 1rem 1.25rem;
+    font-family: 'Helvetica Neue', sans-serif;
+    font-size: 0.85rem;
+    line-height: 1.6;
+    margin-bottom: 1rem;
+  }
+  .callout.info { background: var(--sky-pale); border-left: 3px solid var(--sky); color: #0d3d5a; }
+  .callout.tip { background: var(--amber-pale); border-left: 3px solid var(--amber); color: #5a3d00; }
+  .callout.success { background: var(--green-pale); border-left: 3px solid var(--green-mid); color: var(--green-dark); }
+  .callout strong { font-weight: 700; }
+
+  /* === CHART CANVAS === */
+  .chart-box {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+  }
+  .chart-box h4 {
+    font-family: 'Helvetica Neue', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 0.75rem;
+  }
+
+  /* === PROGRESS === */
+  .progress-wrap { background: rgba(255,255,255,0.2); border-radius: 4px; height: 6px; margin-top: 0.5rem; }
+  .progress-fill { height: 6px; border-radius: 4px; background: var(--green-light); transition: width 0.5s; }
+
+  /* === REPORT === */
+  .report-section {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    margin-bottom: 1.25rem;
+  }
+  .report-section h3 { font-size: 1rem; color: var(--green-dark); margin-bottom: 0.75rem; }
+  .report-section p { font-family: 'Helvetica Neue', sans-serif; font-size: 0.88rem; line-height: 1.65; color: var(--text-muted); }
+  .report-input {
+    width: 100%;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    padding: 0.75rem;
+    font-family: 'Helvetica Neue', sans-serif;
+    font-size: 0.88rem;
+    line-height: 1.5;
+    resize: vertical;
+    min-height: 90px;
+    margin-top: 0.75rem;
+    color: var(--text);
+  }
+  .report-input:focus { outline: none; border-color: var(--green-mid); }
+  .submit-btn {
+    background: var(--green-mid);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 24px;
+    font-family: 'Helvetica Neue', sans-serif;
+    font-size: 0.88rem;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 1rem;
+    transition: background 0.2s;
+  }
+  .submit-btn:hover { background: var(--green-dark); }
+
+  @media (max-width: 720px) {
+    .hero { flex-direction: column; gap: 1.5rem; padding: 1.5rem; }
+    .two-col, .ndvi-wrap, .three-col, .drone-stat-row { grid-template-columns: 1fr; }
+    .topbar-nav { display: none; }
+    .section { padding: 1rem; }
+  }
+</style>
+</head>
+<body>
+
+<nav class="topbar">
+  <div class="topbar-brand">
+    <span class="leaf">🌾</span>
+    <div>
+      <div>CropSight</div>
+      <div class="topbar-subtitle">Precision Agriculture Lab</div>
+    </div>
+  </div>
+  <div class="topbar-nav">
+    <button class="nav-btn active" onclick="showSection('home')">Home</button>
+    <button class="nav-btn" onclick="showSection('map')">Field Map</button>
+    <button class="nav-btn" onclick="showSection('drone')">Drone Planner</button>
+    <button class="nav-btn" onclick="showSection('ndvi')">NDVI Analysis</button>
+    <button class="nav-btn" onclick="showSection('data')">Yield Data</button>
+    <button class="nav-btn" onclick="showSection('quiz')">Field Test</button>
+    <button class="nav-btn" onclick="showSection('report')">My Report</button>
+  </div>
+  <div class="xp-badge" id="xp-display">0 XP</div>
+</nav>
+
+<!-- ===== HOME ===== -->
+<section id="home" class="section active">
+  <div class="hero">
+    <div class="hero-text">
+      <div class="hero-eyebrow">Precision Agriculture · GIS · Remote Sensing</div>
+      <h1>Can data help us feed the world?</h1>
+      <p>Use satellite imagery, drone surveys, and geographic information systems to analyze a real farm — then predict how much corn it will produce this season. The same tools used by professional agronomists.</p>
+      <div class="progress-wrap" style="max-width:300px; margin-top:1rem;">
+        <div class="progress-fill" id="overall-progress" style="width:0%"></div>
+      </div>
+      <div style="font-family:'Helvetica Neue',sans-serif;font-size:0.75rem;opacity:0.7;margin-top:4px;">
+        <span id="progress-text">0% complete · 0 of 5 modules done</span>
+      </div>
+    </div>
+    <div class="hero-stats">
+      <div class="stat-chip">
+        <div class="num">8M</div>
+        <div class="lbl">Farms using precision ag</div>
+      </div>
+      <div class="stat-chip">
+        <div class="num">15%</div>
+        <div class="lbl">Yield increase possible</div>
+      </div>
+      <div class="stat-chip">
+        <div class="num">$4B</div>
+        <div class="lbl">AgTech market in 2024</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-head">
+    <div>
+      <div class="sub">Your learning journey</div>
+      <h2>Five modules · One farm · Real science</h2>
+    </div>
+  </div>
+
+  <div class="modules-grid">
+    <div class="module-card" onclick="showSection('map')">
+      <span class="mod-icon">🗺️</span>
+      <span class="mod-badge badge-new">Start here</span>
+      <h3>Field Mapping</h3>
+      <p>Use ArcGIS to explore a 500-acre corn farm in Kansas. Identify soil zones, elevation changes, and drainage patterns.</p>
+    </div>
+    <div class="module-card" onclick="showSection('drone')">
+      <span class="mod-icon">🚁</span>
+      <span class="mod-badge badge-new">New</span>
+      <h3>Drone Flight Planning</h3>
+      <p>Design an autonomous drone survey mission. Set altitude, overlap percentage, and flight paths to achieve full field coverage.</p>
+    </div>
+    <div class="module-card" onclick="showSection('ndvi')">
+      <span class="mod-icon">🌿</span>
+      <span class="mod-badge badge-new">New</span>
+      <h3>NDVI Crop Health</h3>
+      <p>Analyze Normalized Difference Vegetation Index imagery. Diagnose stressed zones and link plant health to yield prediction.</p>
+    </div>
+    <div class="module-card" onclick="showSection('data')">
+      <span class="mod-icon">📊</span>
+      <span class="mod-badge badge-new">New</span>
+      <h3>Yield Forecasting</h3>
+      <p>Combine soil, weather, and NDVI data in a regression model. Produce a field-wide yield estimate with confidence intervals.</p>
+    </div>
+    <div class="module-card" onclick="showSection('report')">
+      <span class="mod-icon">📋</span>
+      <span class="mod-badge badge-lock">After data</span>
+      <h3>Field Report</h3>
+      <p>Write up your findings like a professional agronomist. Submit recommendations to the farm manager.</p>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div class="callout info">
+      <strong>📍 Your study site:</strong> A 500-acre corn farm near Salina, Kansas — in the heart of America's Corn Belt. Average rainfall 28 in/yr, loamy silt soils, with a center-pivot irrigation system.
+    </div>
+    <div class="callout tip">
+      <strong>🛠 Tools you'll use:</strong> ArcGIS Online for mapping, drone simulation for flight planning, multispectral image analysis for NDVI, and statistical modeling for yield forecasting.
+    </div>
+  </div>
+</section>
+
+<!-- ===== MAP ===== -->
+<section id="map" class="section">
+  <div class="section-head">
+    <div>
+      <div class="sub">Module 1 · ArcGIS Field Mapping</div>
+      <h2>Explore the farm with GIS</h2>
+    </div>
+  </div>
+
+  <div class="callout info">
+    <strong>What is GIS?</strong> Geographic Information Systems (GIS) let us layer different kinds of spatial data — soil type, elevation, water flow — on top of each other to find patterns invisible to the naked eye. ArcGIS is the industry standard used by the USDA, NASA, and thousands of farms worldwide.
+  </div>
+
+  <div class="map-controls">
+    <button class="ctrl-btn active" id="btn-imagery" onclick="setLayer('imagery')">🛰 Satellite</button>
+    <button class="ctrl-btn" id="btn-topo" onclick="setLayer('topo')">⛰ Topographic</button>
+    <button class="ctrl-btn" id="btn-soil" onclick="setLayer('soil')">🟤 Soil Survey</button>
+    <button class="ctrl-btn" id="btn-hybrid" onclick="setLayer('hybrid')">🗺 Hybrid</button>
+    <button class="ctrl-btn" id="btn-streetmap" onclick="setLayer('streetmap')">🛣 Street Map</button>
+  </div>
+
+  <div class="legend-bar">
+    <span><strong class="lbl">Legend:</strong></span>
+    <span><span class="swatch" style="background:#2d7a4f"></span>High-yield zone</span>
+    <span><span class="swatch" style="background:#e8a020"></span>Variable zone</span>
+    <span><span class="swatch" style="background:#c0392b"></span>Stress zone</span>
+    <span><span class="swatch" style="background:rgba(26,104,150,0.6)"></span>Irrigation pivot</span>
+  </div>
+
+  <div id="mapview"></div>
+
+  <div class="two-col">
+    <div class="info-panel" id="zone-info">
+      <h3>📍 Field Zone Summary</h3>
+      <div class="info-row"><span class="key">Total field area</span><span class="val">500 acres</span></div>
+      <div class="info-row"><span class="key">High-yield zone</span><span class="val good">220 ac (44%)</span></div>
+      <div class="info-row"><span class="key">Variable zone</span><span class="val warn">185 ac (37%)</span></div>
+      <div class="info-row"><span class="key">Stress zone</span><span class="val bad">95 ac (19%)</span></div>
+      <div class="info-row"><span class="key">Avg elevation</span><span class="val">1,287 ft</span></div>
+      <div class="info-row"><span class="key">Elevation range</span><span class="val">42 ft</span></div>
+      <div class="info-row"><span class="key">Dominant soil</span><span class="val">Harney silt loam</span></div>
+      <div class="info-row"><span class="key">Irrigation coverage</span><span class="val good">87%</span></div>
+    </div>
+    <div>
+      <div class="callout tip" style="margin-bottom:0.75rem;">
+        <strong>🔍 Try it:</strong> Switch to the Topographic layer and look for low-lying areas. These are often wetter and may have drainage issues that reduce yield. Compare to Satellite to see if those areas look different in imagery.
+      </div>
+      <div class="callout success">
+        <strong>💡 Real skill:</strong> Agronomists call this a "management zone map." They use it to apply different amounts of seed, fertilizer, and water to each zone — a practice called variable-rate application that saves money and reduces environmental impact.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== DRONE ===== -->
+<section id="drone" class="section">
+  <div class="section-head">
+    <div>
+      <div class="sub">Module 2 · Drone Flight Planning</div>
+      <h2>Plan an autonomous survey mission</h2>
+    </div>
+  </div>
+
+  <div class="callout info">
+    <strong>Why drones?</strong> Satellites revisit the same spot every 5–16 days and can't fly below clouds. Agricultural drones (UAVs) fly at 100–400 ft, capture centimeter-level imagery, and can be scheduled any day. They carry multispectral cameras that see wavelengths invisible to the human eye — perfect for detecting crop stress before you can see it.
+  </div>
+
+  <div class="drone-controls">
+    <div class="param-group">
+      <label>Altitude</label>
+      <input type="range" min="50" max="400" value="120" step="10" id="altitude-slider" oninput="updateDronePlan()">
+      <span id="altitude-val">120</span><label>ft</label>
+    </div>
+    <div class="param-group">
+      <label>Side overlap</label>
+      <input type="range" min="40" max="90" value="70" step="5" id="overlap-slider" oninput="updateDronePlan()">
+      <span id="overlap-val">70</span><label>%</label>
+    </div>
+    <div class="param-group">
+      <label>Speed</label>
+      <input type="range" min="5" max="25" value="12" step="1" id="speed-slider" oninput="updateDronePlan()">
+      <span id="speed-val">12</span><label>m/s</label>
+    </div>
+    <button class="ctrl-btn active" onclick="toggleGrid()">⚡ Toggle flight lines</button>
+    <button class="ctrl-btn" onclick="animateDrone()">▶ Simulate flight</button>
+  </div>
+
+  <div class="drone-stat-row">
+    <div class="drone-stat"><div class="ds-num" id="stat-gsd">2.4</div><div class="ds-lbl">cm/px (GSD)</div></div>
+    <div class="drone-stat"><div class="ds-num" id="stat-lines">18</div><div class="ds-lbl">Flight lines</div></div>
+    <div class="drone-stat"><div class="ds-num" id="stat-time">42</div><div class="ds-lbl">Est. minutes</div></div>
+    <div class="drone-stat"><div class="ds-num" id="stat-images">1,240</div><div class="ds-lbl">Images captured</div></div>
+  </div>
+
+  <div class="drone-canvas-wrap">
+    <canvas id="droneCanvas" width="900" height="420"></canvas>
+  </div>
+
+  <div class="two-col">
+    <div>
+      <div class="callout tip">
+        <strong>Ground Sample Distance (GSD)</strong> is how much real-world area each pixel represents. At 120 ft altitude, a GSD of 2.4 cm/px means you could spot a footprint in the soil. Higher altitude = faster survey, but lower detail. Try pushing altitude to 400 ft — what happens to GSD?
+      </div>
+    </div>
+    <div class="info-panel">
+      <h3>🚁 Mission parameters</h3>
+      <div class="info-row"><span class="key">Drone model (sim)</span><span class="val">DJI Matrice 350</span></div>
+      <div class="info-row"><span class="key">Camera</span><span class="val">MicaSense RedEdge-MX</span></div>
+      <div class="info-row"><span class="key">Bands</span><span class="val">Blue, Green, Red, RE, NIR</span></div>
+      <div class="info-row"><span class="key">Battery life</span><span class="val">55 min per charge</span></div>
+      <div class="info-row"><span class="key">Field coverage</span><span class="val good" id="stat-coverage">500 ac</span></div>
+      <div class="info-row"><span class="key">Data output</span><span class="val" id="stat-data">14.8 GB</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== NDVI ===== -->
+<section id="ndvi" class="section">
+  <div class="section-head">
+    <div>
+      <div class="sub">Module 3 · Remote Sensing Analysis</div>
+      <h2>Read the crop's vital signs with NDVI</h2>
+    </div>
+  </div>
+
+  <div class="callout info">
+    <strong>NDVI formula:</strong> (NIR − Red) / (NIR + Red). Healthy plants absorb red light for photosynthesis and strongly reflect near-infrared (NIR). Stressed or dying plants reflect more red and less NIR. NDVI ranges from −1 to +1. Values above 0.5 indicate healthy, dense canopy. Below 0.3 suggests bare soil or struggling crops.
+  </div>
+
+  <div class="ndvi-wrap">
+    <div>
+      <div class="ndvi-canvas-box">
+        <div class="canvas-label">True color (RGB)</div>
+        <canvas id="rgbCanvas" width="400" height="280"></canvas>
+      </div>
+    </div>
+    <div>
+      <div class="ndvi-canvas-box">
+        <div class="canvas-label">NDVI false-color map</div>
+        <canvas id="ndviCanvas" width="400" height="280"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="ndvi-wrap">
+    <div class="ndvi-slider-group">
+      <h4>⚙️ Adjust field conditions</h4>
+      <div class="slider-row">
+        <label>Soil moisture <strong id="moisture-val">65%</strong></label>
+        <input type="range" min="10" max="100" value="65" id="moisture-slider" oninput="updateNDVI()">
+      </div>
+      <div class="slider-row">
+        <label>Nitrogen level <strong id="nitrogen-val">Medium (110 lbs/ac)</strong></label>
+        <input type="range" min="0" max="100" value="55" id="nitrogen-slider" oninput="updateNDVI()">
+      </div>
+      <div class="slider-row">
+        <label>Days since planting <strong id="days-val">72 days</strong></label>
+        <input type="range" min="0" max="120" value="72" id="days-slider" oninput="updateNDVI()">
+      </div>
+      <div class="slider-row">
+        <label>Pest pressure <strong id="pest-val">Low</strong></label>
+        <input type="range" min="0" max="100" value="15" id="pest-slider" oninput="updateNDVI()">
+      </div>
+    </div>
+    <div>
+      <div class="yield-forecast-card">
+        <div class="yfc-lbl">Predicted NDVI (avg)</div>
+        <div class="yfc-num" id="ndvi-avg">0.71</div>
+        <div class="yfc-unit">Normalized Difference Vegetation Index</div>
+      </div>
+      <div class="yield-forecast-card" style="background:var(--soil); margin-top:0.75rem;">
+        <div class="yfc-lbl">Estimated yield</div>
+        <div class="yfc-num" id="yield-est">196</div>
+        <div class="yfc-unit">bushels per acre</div>
+      </div>
+      <div class="callout success" style="margin-top:0.75rem;">
+        <strong>Kansas avg:</strong> 170 bu/ac (2023 USDA). A well-managed field with optimal inputs can reach 220+ bu/ac. How close can you get?
+      </div>
+    </div>
+  </div>
+
+  <div class="legend-bar">
+    <strong class="lbl">NDVI scale:</strong>
+    <span><span class="swatch" style="background:#8B0000"></span>&lt;0.1 Bare/dead</span>
+    <span><span class="swatch" style="background:#d4a017"></span>0.1–0.3 Sparse</span>
+    <span><span class="swatch" style="background:#90ee90"></span>0.3–0.5 Moderate</span>
+    <span><span class="swatch" style="background:#228B22"></span>0.5–0.7 Healthy</span>
+    <span><span class="swatch" style="background:#006400"></span>&gt;0.7 Dense/peak</span>
+  </div>
+</section>
+
+<!-- ===== DATA ===== -->
+<section id="data" class="section">
+  <div class="section-head">
+    <div>
+      <div class="sub">Module 4 · Yield Forecasting</div>
+      <h2>Build your prediction model</h2>
+    </div>
+  </div>
+
+  <div class="callout info">
+    <strong>How agronomists predict yield:</strong> They combine multiple data layers — soil type, plant population, NDVI readings, weather (GDDs — Growing Degree Days), and historical yields — using regression models. ArcGIS has built-in spatial statistics tools that can run these predictions field-by-field.
+  </div>
+
+  <div class="chart-box">
+    <h4>NDVI vs Corn Yield — 10-year correlation (Salina County, KS)</h4>
+    <canvas id="scatterCanvas" width="800" height="280"></canvas>
+  </div>
+
+  <div class="data-table-wrap">
+    <table id="yield-table">
+      <thead>
+        <tr>
+          <th>Field Zone</th>
+          <th>Area (ac)</th>
+          <th>Avg NDVI</th>
+          <th>Soil type</th>
+          <th>Irrigation</th>
+          <th>Predicted Yield</th>
+          <th>Confidence</th>
+          <th>Trend vs Last Year</th>
+        </tr>
+      </thead>
+      <tbody id="yield-tbody"></tbody>
+    </table>
+  </div>
+
+  <div class="three-col">
+    <div class="info-panel">
+      <h3>📈 Field total forecast</h3>
+      <div class="info-row"><span class="key">Total area</span><span class="val">500 ac</span></div>
+      <div class="info-row"><span class="key">Weighted avg yield</span><span class="val good">191 bu/ac</span></div>
+      <div class="info-row"><span class="key">Total production</span><span class="val good">95,500 bu</span></div>
+      <div class="info-row"><span class="key">At $4.50/bu</span><span class="val">$429,750 est.</span></div>
+      <div class="info-row"><span class="key">Model R²</span><span class="val good">0.83</span></div>
+    </div>
+    <div class="info-panel">
+      <h3>🌦 Weather inputs (YTD)</h3>
+      <div class="info-row"><span class="key">Growing Degree Days</span><span class="val good">1,842 GDD</span></div>
+      <div class="info-row"><span class="key">Total rainfall</span><span class="val">14.2 in</span></div>
+      <div class="info-row"><span class="key">Driest month</span><span class="val warn">July (0.8 in)</span></div>
+      <div class="info-row"><span class="key">Avg max temp</span><span class="val warn">89°F</span></div>
+      <div class="info-row"><span class="key">Frost risk</span><span class="val good">Low (Oct 15)</span></div>
+    </div>
+    <div class="info-panel">
+      <h3>🔬 Model performance</h3>
+      <div class="info-row"><span class="key">Algorithm</span><span class="val">Multi-var regression</span></div>
+      <div class="info-row"><span class="key">Training data</span><span class="val">10 yr × 48 zones</span></div>
+      <div class="info-row"><span class="key">RMSE</span><span class="val good">11.4 bu/ac</span></div>
+      <div class="info-row"><span class="key">95% CI width</span><span class="val">±22 bu/ac</span></div>
+      <div class="info-row"><span class="key">Harvest date est.</span><span class="val">Oct 3–12</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== QUIZ ===== -->
+<section id="quiz" class="section">
+  <div class="section-head">
+    <div>
+      <div class="sub">Module 5 · Field Test</div>
+      <h2>Test your knowledge</h2>
+    </div>
+  </div>
+
+  <div id="quiz-container"></div>
+  <div style="text-align:center; margin-top:1rem; font-family:'Helvetica Neue',sans-serif;">
+    <div id="quiz-score" style="font-size:1.1rem; font-weight:700; color:var(--green-dark); display:none;"></div>
+  </div>
+</section>
+
+<!-- ===== REPORT ===== -->
+<section id="report" class="section">
+  <div class="section-head">
+    <div>
+      <div class="sub">Module 6 · Capstone</div>
+      <h2>Write your agronomist report</h2>
+    </div>
+  </div>
+
+  <div class="callout success">
+    <strong>🎓 You've earned it:</strong> Using GIS mapping, drone planning, NDVI analysis, and yield modeling — just like a real precision agronomist. Now summarize your findings and make recommendations to the farm manager.
+  </div>
+
+  <div class="report-section">
+    <h3>1. Field assessment summary</h3>
+    <p>Describe what you found in the field map. Which zones showed the most variation? What soil or topography features stood out?</p>
+    <textarea class="report-input" placeholder="Example: The field map revealed significant yield variation between the northwest and southeast quadrants. The lower-lying areas near the seasonal drainage channel showed consistently lower NDVI values..."></textarea>
+  </div>
+
+  <div class="report-section">
+    <h3>2. Drone survey findings</h3>
+    <p>Summarize your drone flight plan. What altitude and overlap did you choose and why? What sensor data did the drone collect?</p>
+    <textarea class="report-input" placeholder="Example: I designed a survey at 120 ft altitude with 70% side overlap to achieve a GSD of 2.4 cm/pixel, sufficient to identify individual plant stress symptoms..."></textarea>
+  </div>
+
+  <div class="report-section">
+    <h3>3. NDVI analysis results</h3>
+    <p>Interpret the NDVI map. Which areas were stressed? What do you think caused it — drought, nutrient deficiency, pests, or something else?</p>
+    <textarea class="report-input" placeholder="Example: The NDVI map showed three distinct stress zones totaling 95 acres. Zone C, in the northeast corner, had NDVI values below 0.3. Based on the soil data showing sandy loam and the lack of irrigation coverage..."></textarea>
+  </div>
+
+  <div class="report-section">
+    <h3>4. Yield forecast and recommendations</h3>
+    <p>State your yield prediction and give two specific management recommendations to improve yield next season.</p>
+    <textarea class="report-input" placeholder="Example: My model predicts a field-wide average of 191 bu/ac (±22 bu/ac) for a total production of ~95,500 bu. Recommendations: (1) Expand irrigation coverage to Zone C to address the moisture deficit identified in NDVI imagery. (2) Apply variable-rate nitrogen treatment, reducing inputs in high-yield zones and increasing in stressed zones..."></textarea>
+  </div>
+
+  <div style="text-align:center;">
+    <button class="submit-btn" onclick="submitReport()">📬 Submit report to farm manager</button>
+  </div>
+  <div id="submit-confirm" style="display:none; margin-top:1.5rem;">
+    <div class="callout success" style="text-align:center; font-size:1rem;">
+      <strong>🌾 Report submitted! +100 XP earned.</strong><br>
+      <span style="font-size:0.85rem;">Great work, agronomist. Your recommendations have been forwarded to the farm management team.</span>
+    </div>
+  </div>
+</section>
+
+<script>
+// ============================================================
+// NAV
+// ============================================================
+let completedModules = new Set();
+let xp = 0;
+
+function showSection(id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  const btns = document.querySelectorAll('.nav-btn');
+  btns.forEach(b => { if(b.getAttribute('onclick').includes(id)) b.classList.add('active'); });
+  if(id === 'map' && !window.mapLoaded) initMap();
+  if(id === 'drone') { setTimeout(drawDroneCanvas, 100); }
+  if(id === 'ndvi') { setTimeout(() => { drawRGB(); drawNDVI(); }, 100); }
+  if(id === 'data') { setTimeout(() => { drawScatter(); buildYieldTable(); }, 100); }
+  if(id === 'quiz' && !window.quizBuilt) buildQuiz();
+  completedModules.add(id);
+  updateProgress();
+}
+
+function updateProgress() {
+  const mods = ['map','drone','ndvi','data','quiz'];
+  const done = mods.filter(m => completedModules.has(m)).length;
+  const pct = Math.round(done / mods.length * 100);
+  document.getElementById('overall-progress').style.width = pct + '%';
+  document.getElementById('progress-text').textContent = `${pct}% complete · ${done} of ${mods.length} modules done`;
+}
+
+function addXP(amount) {
+  xp += amount;
+  document.getElementById('xp-display').textContent = xp + ' XP';
+}
+
+// ============================================================
+// MAP
+// ============================================================
+window.mapLoaded = false;
+let mapView = null;
+let currentLayer = 'imagery';
+
+function initMap() {
+  require([
+    "esri/Map",
+    "esri/views/MapView",
+    "esri/layers/GraphicsLayer",
+    "esri/Graphic",
+    "esri/geometry/Polygon",
+    "esri/symbols/SimpleFillSymbol",
+    "esri/geometry/Circle",
+    "esri/symbols/SimpleLineSymbol"
+  ], function(Map, MapView, GraphicsLayer, Graphic, Polygon, SimpleFillSymbol, Circle, SimpleLineSymbol) {
+    window.mapLoaded = true;
+
+    const map = new Map({ basemap: "satellite" });
+    window._map = map;
+
+    mapView = new MapView({
+      container: "mapview",
+      map: map,
+      center: [-97.61, 38.84],
+      zoom: 13
+    });
+
+    const gLayer = new GraphicsLayer();
+    map.add(gLayer);
+
+    // Field boundary
+    const fieldPoly = new Polygon({
+      rings: [[
+        [-97.630, 38.855], [-97.590, 38.857], [-97.588, 38.828],
+        [-97.629, 38.826], [-97.630, 38.855]
+      ]],
+      spatialReference: { wkid: 4326 }
+    });
+    gLayer.add(new Graphic({ geometry: fieldPoly, symbol: new SimpleFillSymbol({ color: [0,0,0,0], outline: { color: [255,255,255,200], width: 2 } }) }));
+
+    // Zone fills
+    const zones = [
+      { rings: [[[-97.625,38.851],[-97.610,38.852],[-97.610,38.843],[-97.625,38.842],[-97.625,38.851]]], color: [45,122,79,100] },
+      { rings: [[[-97.610,38.852],[-97.595,38.853],[-97.594,38.838],[-97.610,38.840],[-97.610,38.852]]], color: [232,160,32,100] },
+      { rings: [[[-97.620,38.838],[-97.597,38.836],[-97.595,38.829],[-97.621,38.827],[-97.620,38.838]]], color: [192,57,43,100] },
+    ];
+    zones.forEach(z => {
+      const poly = new Polygon({ rings: z.rings, spatialReference: { wkid: 4326 } });
+      gLayer.add(new Graphic({ geometry: poly, symbol: new SimpleFillSymbol({ color: z.color, outline: { color: z.color.slice(0,3).concat([200]), width: 1 } }) }));
+    });
+
+    // Irrigation circle
+    const pivot = new Circle({ center: { longitude: -97.609, latitude: 38.840 }, radius: 900, radiusUnit: 'meters', spatialReference: { wkid: 4326 } });
+    gLayer.add(new Graphic({ geometry: pivot, symbol: new SimpleFillSymbol({ color: [26,104,150,50], outline: { color: [26,104,150,200], width: 2 } }) }));
+
+    mapView.on('click', (e) => { addXP(2); });
+
+    window._graphicsLayer = gLayer;
+    window._Map = Map;
+    window._MapView = MapView;
+  });
+}
+
+function setLayer(type) {
+  document.querySelectorAll('.ctrl-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  currentLayer = type;
+  if(!window._map) return;
+  const basemaps = {
+    imagery: 'satellite',
+    topo: 'topo-vector',
+    hybrid: 'hybrid',
+    streetmap: 'streets-vector',
+    soil: 'gray-vector'
+  };
+  window._map.basemap = basemaps[type] || 'satellite';
+  addXP(5);
+}
+
+// ============================================================
+// DRONE CANVAS
+// ============================================================
+let showGrid = true;
+let droneAnimFrame = null;
+let droneX = 0, droneY = 0, droneDir = 1, droneLine = 0;
+
+function updateDronePlan() {
+  const alt = parseInt(document.getElementById('altitude-slider').value);
+  const ovlp = parseInt(document.getElementById('overlap-slider').value);
+  const spd = parseInt(document.getElementById('speed-slider').value);
+  document.getElementById('altitude-val').textContent = alt;
+  document.getElementById('overlap-val').textContent = ovlp;
+  document.getElementById('speed-val').textContent = spd;
+
+  const gsd = +(alt * 0.02).toFixed(1);
+  const swath = +(alt * 0.8).toFixed(0);
+  const lines = Math.ceil(4000 / (swath * (1 - ovlp/100)));
+  const totalDist = lines * 2500;
+  const timeMin = Math.ceil(totalDist / (spd * 60));
+  const images = Math.floor(totalDist / (swath * 0.7));
+  const dataGB = +(images * 0.012).toFixed(1);
+
+  document.getElementById('stat-gsd').textContent = gsd;
+  document.getElementById('stat-lines').textContent = lines;
+  document.getElementById('stat-time').textContent = timeMin;
+  document.getElementById('stat-images').textContent = images.toLocaleString();
+  document.getElementById('stat-data').textContent = dataGB + ' GB';
+  drawDroneCanvas();
+}
+
+function toggleGrid() {
+  showGrid = !showGrid;
+  drawDroneCanvas();
+}
+
+function drawDroneCanvas() {
+  const canvas = document.getElementById('droneCanvas');
+  if(!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0,0,W,H);
+
+  // Field background
+  const grad = ctx.createLinearGradient(0,0,W,H);
+  grad.addColorStop(0, '#5a8a3a');
+  grad.addColorStop(0.4, '#4a7a2a');
+  grad.addColorStop(1, '#3a6a1a');
+  ctx.fillStyle = grad;
+  ctx.fillRect(60, 30, W-120, H-60);
+
+  // Crop rows
+  ctx.strokeStyle = 'rgba(0,0,0,0.12)';
+  ctx.lineWidth = 1;
+  for(let y = 30; y < H-30; y += 8) {
+    ctx.beginPath(); ctx.moveTo(60, y); ctx.lineTo(W-60, y); ctx.stroke();
+  }
+
+  // Field border
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(60, 30, W-120, H-60);
+
+  // Irrigation pivot circle
+  ctx.strokeStyle = 'rgba(26,104,150,0.7)';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([6,4]);
+  ctx.beginPath();
+  ctx.arc(W/2, H/2, Math.min(W,H)*0.28, 0, Math.PI*2);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = 'rgba(26,104,150,0.15)';
+  ctx.beginPath();
+  ctx.arc(W/2, H/2, Math.min(W,H)*0.28, 0, Math.PI*2);
+  ctx.fill();
+
+  if(showGrid) {
+    const lines = parseInt(document.getElementById('stat-lines').textContent) || 18;
+    const step = (H - 60) / lines;
+    ctx.strokeStyle = 'rgba(255,220,50,0.7)';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([]);
+    for(let i = 0; i <= lines; i++) {
+      const y = 30 + i * step;
+      ctx.beginPath();
+      ctx.moveTo(60, y);
+      ctx.lineTo(W - 60, y);
+      ctx.stroke();
+      if(i < lines) {
+        const dir = i % 2;
+        ctx.fillStyle = 'rgba(255,220,50,0.5)';
+        ctx.beginPath();
+        if(dir === 0) {
+          ctx.moveTo(W-70, y+2); ctx.lineTo(W-55, y+step/2); ctx.lineTo(W-70, y+step-2);
+        } else {
+          ctx.moveTo(70, y+2); ctx.lineTo(55, y+step/2); ctx.lineTo(70, y+step-2);
+        }
+        ctx.fill();
+      }
+    }
+  }
+
+  // Takeoff/landing marker
+  ctx.fillStyle = '#e8a020';
+  ctx.beginPath();
+  ctx.arc(80, H/2, 8, 0, Math.PI*2);
+  ctx.fill();
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 9px Helvetica Neue';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('H', 80, H/2);
+
+  // Labels
+  ctx.fillStyle = 'rgba(255,255,255,0.85)';
+  ctx.font = '11px Helvetica Neue';
+  ctx.textAlign = 'left';
+  ctx.fillText('← Flight path (E–W lawnmower pattern)', 70, 22);
+  ctx.textAlign = 'right';
+  ctx.fillText(`${parseInt(document.getElementById('altitude-slider').value)} ft AGL`, W-65, 22);
+}
+
+function animateDrone() {
+  if(droneAnimFrame) { cancelAnimationFrame(droneAnimFrame); droneAnimFrame = null; return; }
+  const canvas = document.getElementById('droneCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const lines = parseInt(document.getElementById('stat-lines').textContent) || 18;
+  const step = (H - 60) / lines;
+  droneX = 60; droneLine = 0; droneDir = 1;
+  droneY = 30 + step/2;
+  addXP(10);
+
+  function tick() {
+    drawDroneCanvas();
+    droneX += 3 * droneDir;
+    if(droneDir > 0 && droneX > W - 60) {
+      droneDir = -1; droneLine++; droneY += step;
+    } else if(droneDir < 0 && droneX < 60) {
+      droneDir = 1; droneLine++; droneY += step;
+    }
+    // Draw drone
+    ctx.save();
+    ctx.translate(droneX, droneY);
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.arc(0, 0, 7, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#1a6896';
+    ctx.beginPath(); ctx.arc(0, 0, 4, 0, Math.PI*2); ctx.fill();
+    // Rotors
+    ['#ff0','#ff0','#ff0','#ff0'].forEach((c,i) => {
+      const ang = (i * Math.PI/2);
+      ctx.strokeStyle = c; ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(Math.cos(ang)*7, Math.sin(ang)*7);
+      ctx.lineTo(Math.cos(ang)*12, Math.sin(ang)*12);
+      ctx.stroke();
+    });
+    ctx.restore();
+
+    if(droneLine < lines) droneAnimFrame = requestAnimationFrame(tick);
+    else droneAnimFrame = null;
+  }
+  droneAnimFrame = requestAnimationFrame(tick);
+}
+
+// ============================================================
+// NDVI CANVAS
+// ============================================================
+const FIELD_ZONES = [
+  // Each zone: [x, y, w, h, baseNDVI, type]
+  [0, 0, 0.5, 0.5, 0.72, 'high'],
+  [0.5, 0, 0.5, 0.5, 0.58, 'mid'],
+  [0, 0.5, 0.35, 0.5, 0.45, 'mid'],
+  [0.35, 0.5, 0.4, 0.5, 0.62, 'high'],
+  [0.75, 0.5, 0.25, 0.5, 0.24, 'low'],
+];
+
+function ndviColor(v) {
+  if(v < 0.1) return [139,0,0];
+  if(v < 0.3) return [180,140,20];
+  if(v < 0.5) return [144,238,100];
+  if(v < 0.7) return [34,139,34];
+  return [0,100,0];
+}
+
+function drawRGB() {
+  const canvas = document.getElementById('rgbCanvas');
+  if(!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle = '#3a6a1a';
+  ctx.fillRect(0,0,W,H);
+  // Crop rows
+  ctx.strokeStyle = 'rgba(0,0,0,0.15)';
+  ctx.lineWidth = 1;
+  for(let y=0;y<H;y+=5) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
+  FIELD_ZONES.forEach(([rx,ry,rw,rh,ndvi]) => {
+    const greenVal = Math.floor(60 + ndvi * 120);
+    ctx.fillStyle = `rgb(${Math.floor(greenVal*0.4)},${greenVal},${Math.floor(greenVal*0.3)})`;
+    ctx.fillRect(rx*W, ry*H, rw*W, rh*H);
+  });
+  ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+  FIELD_ZONES.forEach(([rx,ry,rw,rh]) => { ctx.strokeRect(rx*W, ry*H, rw*W, rh*H); });
+}
+
+function drawNDVI() {
+  const canvas = document.getElementById('ndviCanvas');
+  if(!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle = '#111';
+  ctx.fillRect(0,0,W,H);
+
+  const moisture = parseInt(document.getElementById('moisture-slider').value) / 100;
+  const nitrogen = parseInt(document.getElementById('nitrogen-slider').value) / 100;
+  const days = parseInt(document.getElementById('days-slider').value);
+  const pest = parseInt(document.getElementById('pest-slider').value) / 100;
+  const growthFactor = Math.sin(Math.min(days/120, 1) * Math.PI) * 0.4;
+
+  let totalNDVI = 0, totalArea = 0;
+
+  FIELD_ZONES.forEach(([rx,ry,rw,rh,baseNDVI]) => {
+    const ndvi = Math.max(0, Math.min(1, baseNDVI + growthFactor * 0.5 + moisture*0.2 + nitrogen*0.15 - pest*0.25 + (Math.random()-0.5)*0.02));
+    const [r,g,b] = ndviColor(ndvi);
+    ctx.fillStyle = `rgb(${r},${g},${b})`;
+    ctx.fillRect(rx*W, ry*H, rw*W, rh*H);
+    // Add noise texture
+    for(let px=0; px<20; px++) {
+      const nx = rx*W + Math.random()*rw*W;
+      const ny = ry*H + Math.random()*rh*H;
+      const noise = (Math.random()-0.5)*0.15;
+      const [nr,ng,nb] = ndviColor(Math.max(0,Math.min(1,ndvi+noise)));
+      ctx.fillStyle = `rgba(${nr},${ng},${nb},0.4)`;
+      ctx.fillRect(nx, ny, 6, 6);
+    }
+    totalNDVI += ndvi * rw * rh;
+    totalArea += rw * rh;
+  });
+
+  const avgNDVI = (totalNDVI / totalArea).toFixed(2);
+  document.getElementById('ndvi-avg').textContent = avgNDVI;
+  const yield_ = Math.round(50 + parseFloat(avgNDVI) * 200);
+  document.getElementById('yield-est').textContent = yield_;
+}
+
+function updateNDVI() {
+  const moisture = parseInt(document.getElementById('moisture-slider').value);
+  const nitrogen = parseInt(document.getElementById('nitrogen-slider').value);
+  const days = parseInt(document.getElementById('days-slider').value);
+  const pest = parseInt(document.getElementById('pest-slider').value);
+
+  document.getElementById('moisture-val').textContent = moisture + '%';
+  const nLabel = nitrogen < 33 ? 'Low (60 lbs/ac)' : nitrogen < 66 ? 'Medium (110 lbs/ac)' : 'High (160 lbs/ac)';
+  document.getElementById('nitrogen-val').textContent = nLabel;
+  document.getElementById('days-val').textContent = days + ' days';
+  const pestLabel = pest < 33 ? 'Low' : pest < 66 ? 'Moderate' : 'High';
+  document.getElementById('pest-val').textContent = pestLabel;
+  drawNDVI();
+  addXP(1);
+}
+
+// ============================================================
+// SCATTER CHART
+// ============================================================
+function drawScatter() {
+  const canvas = document.getElementById('scatterCanvas');
+  if(!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0,0,W,H);
+
+  const pad = { l:60, r:30, t:20, b:50 };
+  const iW = W - pad.l - pad.r;
+  const iH = H - pad.t - pad.b;
+
+  // Grid
+  ctx.strokeStyle = '#e8e8e8'; ctx.lineWidth = 1;
+  for(let i=0;i<=5;i++) {
+    const y = pad.t + iH - (i/5)*iH;
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(W-pad.r, y); ctx.stroke();
+    ctx.fillStyle = '#888'; ctx.font = '11px Helvetica Neue'; ctx.textAlign = 'right';
+    ctx.fillText(Math.round(80 + i*40), pad.l-6, y+4);
+  }
+  for(let i=0;i<=6;i++) {
+    const x = pad.l + (i/6)*iW;
+    ctx.beginPath(); ctx.moveTo(x, pad.t); ctx.lineTo(x, H-pad.b); ctx.stroke();
+    ctx.fillStyle = '#888'; ctx.textAlign = 'center';
+    ctx.fillText((0.2 + i*0.1).toFixed(1), x, H-pad.b+16);
+  }
+
+  // Regression line
+  ctx.strokeStyle = '#2d7a4f'; ctx.lineWidth = 2;
+  ctx.setLineDash([]);
+  ctx.beginPath();
+  ctx.moveTo(pad.l, pad.t + iH - (0.2-0.2)/0.6*iH * 0.7);
+  ctx.lineTo(W-pad.r, pad.t + iH * 0.05);
+  ctx.stroke();
+
+  // Data points
+  const pts = [
+    [0.31,115],[0.38,128],[0.45,145],[0.52,159],[0.58,168],[0.63,175],
+    [0.67,183],[0.71,191],[0.74,198],[0.78,207],[0.82,215],[0.68,177],
+    [0.55,162],[0.42,138],[0.35,121],[0.76,203],[0.61,172],[0.49,150],
+    [0.72,195],[0.66,180],[0.56,165],[0.44,141],[0.79,209],[0.85,218],
+    [0.33,119],[0.70,189],[0.54,158],[0.47,148],[0.64,176],[0.81,213],
+  ];
+  pts.forEach(([ndvi, yld]) => {
+    const px = pad.l + ((ndvi-0.2)/0.6)*iW;
+    const py = pad.t + iH - ((yld-80)/160)*iH;
+    ctx.fillStyle = 'rgba(45,122,79,0.6)';
+    ctx.beginPath(); ctx.arc(px,py,5,0,Math.PI*2); ctx.fill();
+  });
+
+  // Axes labels
+  ctx.fillStyle = '#555'; ctx.font = '12px Helvetica Neue';
+  ctx.textAlign = 'center';
+  ctx.fillText('NDVI (August reading)', W/2, H-5);
+  ctx.save(); ctx.translate(14, H/2); ctx.rotate(-Math.PI/2);
+  ctx.fillText('Corn Yield (bu/ac)', 0, 0);
+  ctx.restore();
+}
+
+// ============================================================
+// YIELD TABLE
+// ============================================================
+const ZONES_DATA = [
+  { name: 'Zone A — NW Field', area: 145, ndvi: 0.74, soil: 'Harney silt loam', irrig: 'Full', yield: 206, conf: '±18', trend: '+4%' },
+  { name: 'Zone B — Center', area: 130, ndvi: 0.69, soil: 'Crete silty clay', irrig: 'Full', yield: 191, conf: '±21', trend: '+1%' },
+  { name: 'Zone C — East', area: 110, ndvi: 0.61, soil: 'Harney silt loam', irrig: 'Partial', yield: 173, conf: '±24', trend: '−3%' },
+  { name: 'Zone D — SE Field', area: 70, ndvi: 0.48, soil: 'Smolan silty clay', irrig: 'Partial', yield: 151, conf: '±28', trend: '−7%' },
+  { name: 'Zone E — NE Corner', area: 45, ndvi: 0.27, soil: 'Crete sandy loam', irrig: 'None', yield: 98, conf: '±31', trend: '−12%' },
+];
+
+function buildYieldTable() {
+  const tbody = document.getElementById('yield-tbody');
+  if(!tbody) return;
+  tbody.innerHTML = '';
+  ZONES_DATA.forEach(z => {
+    const trendColor = z.trend.startsWith('+') ? '#2d7a4f' : '#c0392b';
+    const ndviColor2 = z.ndvi > 0.6 ? '#2d7a4f' : z.ndvi > 0.4 ? '#e8a020' : '#c0392b';
+    const barW = Math.round(z.yield / 230 * 100);
+    tbody.innerHTML += `<tr>
+      <td><strong>${z.name}</strong></td>
+      <td>${z.area}</td>
+      <td style="color:${ndviColor2};font-weight:600">${z.ndvi}</td>
+      <td>${z.soil}</td>
+      <td>${z.irrig}</td>
+      <td>
+        <div class="td-bar">
+          <div class="bar-fill" style="width:${barW}px;background:${ndviColor2}"></div>
+          <strong>${z.yield} bu/ac</strong>
+        </div>
+      </td>
+      <td style="font-size:0.78rem;color:#888">${z.conf}</td>
+      <td style="color:${trendColor};font-weight:600">${z.trend}</td>
+    </tr>`;
+  });
+}
+
+// ============================================================
+// QUIZ
+// ============================================================
+const QUESTIONS = [
+  {
+    q: "What does NDVI measure in crops?",
+    opts: ["Soil nitrogen content", "Plant biomass and health via light reflection", "Water drainage patterns", "Pest population density"],
+    ans: 1,
+    fb: "NDVI uses the ratio of Near-Infrared (NIR) to Red light reflection. Healthy plants strongly reflect NIR and absorb red; stressed plants don't — making NDVI a reliable stress indicator."
+  },
+  {
+    q: "A corn field has an NDVI of 0.25 in early August. What should a farmer do?",
+    opts: ["Nothing — NDVI rises naturally", "Scout those zones for drought, disease, or nutrient deficiency", "Harvest early before further losses", "Increase drone survey altitude"],
+    ans: 1,
+    fb: "An NDVI of 0.25 in August — near tasseling time — indicates significant plant stress. The farmer should visit that zone, check soil moisture, look for pest damage, and test leaf tissue for nutrient levels."
+  },
+  {
+    q: "Why do drones use multispectral cameras rather than regular RGB cameras for precision agriculture?",
+    opts: ["They are cheaper and more widely available", "They capture wavelengths like NIR that are invisible to humans but reveal plant stress", "They have higher megapixel counts", "They work better in low light conditions"],
+    ans: 1,
+    fb: "The near-infrared band is the key. Standard cameras only see RGB. Multispectral cameras add red-edge and NIR bands, which are how chlorophyll activity is detected — the biological foundation of NDVI."
+  },
+  {
+    q: "What does a lower Ground Sample Distance (GSD) mean for drone imagery?",
+    opts: ["Larger area covered per flight", "Fewer images captured per mission", "Higher spatial resolution — each pixel represents a smaller real-world area", "The drone is flying faster"],
+    ans: 2,
+    fb: "GSD is how much real-world space one pixel covers. Lower GSD = better detail. Flying lower and slower produces lower GSD (e.g., 1–2 cm/px), letting you identify individual plant issues — but it takes more time and battery."
+  },
+  {
+    q: "In GIS-based yield forecasting, why do agronomists divide a field into 'management zones'?",
+    opts: ["To make maps look more interesting", "Fields are legally required to have zones for insurance purposes", "Different areas have different soil, water, and yield potential — treating each zone differently optimizes inputs and reduces waste", "To calculate how many drone batteries are needed"],
+    ans: 2,
+    fb: "Uniform management treats all field areas the same, overapplying inputs in low-need zones and underapplying in high-need ones. Variable-rate application by zone can reduce fertilizer use by 10–20% while maintaining or increasing yield."
+  },
+  {
+    q: "A regression model predicts 185 bu/ac with an R² of 0.62. What does R² = 0.62 tell us?",
+    opts: ["The model is 62% accurate at guessing individual plant heights", "62% of the variation in yield is explained by the input variables in the model", "The crop is 62% through its growth cycle", "There is a 62% chance of good weather at harvest"],
+    ans: 1,
+    fb: "R² (coefficient of determination) measures how well the model explains real-world variation. R² = 0.62 means 62% of yield differences between zones are captured by the model variables. A good ag model typically targets R² > 0.75."
+  }
+];
+
+window.quizBuilt = false;
+let quizAnswers = {};
+let quizScore = 0;
+
+function buildQuiz() {
+  window.quizBuilt = true;
+  const container = document.getElementById('quiz-container');
+  container.innerHTML = '';
+  QUESTIONS.forEach((q, qi) => {
+    const optHTML = q.opts.map((o,oi) =>
+      `<div class="quiz-opt" id="opt-${qi}-${oi}" onclick="answerQ(${qi},${oi})">
+        <div class="opt-letter">${String.fromCharCode(65+oi)}</div>${o}
+      </div>`
+    ).join('');
+    container.innerHTML += `
+      <div class="quiz-card" id="qcard-${qi}">
+        <div class="quiz-q"><span class="q-num">Q${qi+1}</span>${q.q}</div>
+        <div class="quiz-options" id="opts-${qi}">${optHTML}</div>
+        <div class="quiz-feedback" id="fb-${qi}"></div>
+      </div>`;
+  });
+}
+
+function answerQ(qi, oi) {
+  if(quizAnswers[qi] !== undefined) return;
+  quizAnswers[qi] = oi;
+  const q = QUESTIONS[qi];
+  const correct = oi === q.ans;
+  if(correct) { quizScore++; addXP(20); }
+
+  document.querySelectorAll(`#opts-${qi} .quiz-opt`).forEach(o => o.classList.add('answered'));
+  document.getElementById(`opt-${qi}-${q.ans}`).classList.add('correct');
+  if(!correct) document.getElementById(`opt-${qi}-${oi}`).classList.add('wrong');
+
+  const fb = document.getElementById(`fb-${qi}`);
+  fb.classList.add('visible', correct ? 'correct' : 'wrong');
+  fb.innerHTML = `<strong>${correct ? '✓ Correct!' : '✗ Not quite.'}</strong> ${q.fb}`;
+
+  if(Object.keys(quizAnswers).length === QUESTIONS.length) {
+    const pct = Math.round(quizScore / QUESTIONS.length * 100);
+    const sc = document.getElementById('quiz-score');
+    sc.style.display = 'block';
+    sc.textContent = `Final score: ${quizScore}/${QUESTIONS.length} (${pct}%) — ${pct>=80?'🌾 Outstanding agronomist!':pct>=60?'📊 Good work, keep practicing!':'🔁 Review the modules and try again.'}`;
+    addXP(quizScore * 5);
+  }
+}
+
+// ============================================================
+// REPORT
+// ============================================================
+function submitReport() {
+  document.getElementById('submit-confirm').style.display = 'block';
+  addXP(100);
+  completedModules.add('report');
+  updateProgress();
+}
+
+// ============================================================
+// INIT
+// ============================================================
+window.addEventListener('load', () => {
+  updateDronePlan();
+});
+</script>
+</body>
+</html>

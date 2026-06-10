@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Corn Yield & Climate Change — US Field Activity</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --tan:    #f5f0e8;
+  --brown:  #3d2b1f;
+  --rust:   #b84a2c;
+  --gold:   #c9901a;
+  --sage:   #4a7c4e;
+  --sky:    #2c6e9e;
+  --cream:  #fffdf7;
+  --border: #d8cfc0;
+  --text:   #1e1812;
+  --muted:  #6b5e52;
+  --r1: #1a6b2a;
+  --r2: #4d9e3a;
+  --r3: #91c46e;
+  --r4: #d4e6a0;
+  --r5: #fff3b0;
+  --r6: #ffc870;
+  --r7: #f0803a;
+  --r8: #d02020;
+}
+
+body {
+  font-family: 'Georgia', serif;
+  background: var(--tan);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+header {
+  background: var(--brown);
+  color: #f5f0e8;
+  padding: 1rem 2rem;
+  display: flex;
+  align-items: baseline;
+  gap: 1.5rem;
+  border-bottom: 3px solid var(--gold);
+}
+header h1 { font-size: 1.2rem; font-weight: 700; letter-spacing: -0.01em; }
+header p  { font-family: 'Helvetica Neue', sans-serif; font-size: 0.75rem; opacity: 0.65; letter-spacing: 0.06em; text-transform: uppercase; }
+
+.layout {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  gap: 0;
+  min-height: calc(100vh - 56px);
+}
+
+/* === LEFT PANEL === */
+.panel {
+  background: var(--cream);
+  border-right: 1px solid var(--border);
+  padding: 1.25rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
+.panel-section {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.panel-section-head {
+  background: var(--brown);
+  color: #f5f0e8;
+  padding: 7px 12px;
+  font-family: 'Helvetica Neue', sans-serif;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+.panel-section-body {
+  padding: 0.85rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.slider-group { display: flex; flex-direction: column; gap: 4px; }
+.slider-label {
+  display: flex;
+  justify-content: space-between;
+  font-family: 'Helvetica Neue', sans-serif;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+.slider-label strong { color: var(--text); font-size: 0.82rem; }
+input[type=range] {
+  width: 100%;
+  accent-color: var(--sage);
+  height: 4px;
+  cursor: pointer;
+}
+
+.scenario-btns {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+.s-btn {
+  flex: 1;
+  min-width: 80px;
+  padding: 6px 4px;
+  border: 1.5px solid var(--border);
+  background: var(--cream);
+  border-radius: 6px;
+  font-family: 'Helvetica Neue', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.15s;
+  color: var(--muted);
+  line-height: 1.2;
+}
+.s-btn:hover { border-color: var(--sage); color: var(--sage); }
+.s-btn.active { background: var(--sage); border-color: var(--sage); color: #fff; }
+
+.metric-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.metric {
+  background: var(--tan);
+  border-radius: 6px;
+  padding: 0.6rem 0.75rem;
+  text-align: center;
+}
+.metric .m-val {
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--text);
+}
+.metric .m-val.loss { color: var(--rust); }
+.metric .m-val.gain { color: var(--sage); }
+.metric .m-lbl {
+  font-family: 'Helvetica Neue', sans-serif;
+  font-size: 0.67rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--muted);
+  margin-top: 3px;
+}
+
+.state-info {
+  background: var(--tan);
+  border-radius: 6px;
+  padding: 0.75rem;
+  font-family: 'Helvetica Neue', sans-serif;
+}
+.state-info .si-name { font-size: 0.95rem; font-weight: 700; color: var(--brown); margin-bottom: 0.5rem; }
+.si-row { display: flex; justify-content: space-between; font-size: 0.78rem; padding: 3px 0; border-bottom: 1px solid var(--border); }
+.si-row:last-child { border-bottom: none; }
+.si-row .si-k { color: var(--muted); }
+.si-row .si-v { font-weight: 600; }
+.si-row .si-v.neg { color: var(--rust); }
+.si-row .si-v.pos { color: var(--sage); }
+
+.callout {
+  border-radius: 6px;
+  padding: 0.7rem 0.85rem;
+  font-family: 'Helvetica Neue', sans-serif;
+  font-size: 0.78rem;
+  line-height: 1.55;
+}
+.callout.science { background: #e8f0f7; border-left: 3px solid var(--sky); color: #1a3d5a; }
+.callout.question { background: #fdf3de; border-left: 3px solid var(--gold); color: #4a3200; }
+.callout strong { font-weight: 700; }
+
+.toggle-row { display: flex; align-items: center; gap: 8px; font-family: 'Helvetica Neue', sans-serif; font-size: 0.78rem; color: var(--muted); }
+.toggle-row input[type=checkbox] { accent-color: var(--sage); width: 14px; height: 14px; cursor: pointer; }
+
+/* === RIGHT: MAP AREA === */
+.map-area {
+  display: flex;
+  flex-direction: column;
+  background: #e8e4d8;
+}
+
+.map-toolbar {
+  background: var(--cream);
+  border-bottom: 1px solid var(--border);
+  padding: 0.6rem 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.map-toolbar .view-btns { display: flex; gap: 4px; }
+.v-btn {
+  padding: 4px 12px;
+  border: 1px solid var(--border);
+  background: transparent;
+  border-radius: 20px;
+  font-family: 'Helvetica Neue', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+  color: var(--muted);
+  transition: all 0.15s;
+}
+.v-btn:hover { border-color: var(--sage); color: var(--sage); }
+.v-btn.active { background: var(--sage); border-color: var(--sage); color: #fff; }
+
+.map-toolbar .toolbar-note {
+  font-family: 'Helvetica Neue', sans-serif;
+  font-size: 0.72rem;
+  color: var(--muted);
+  margin-left: auto;
+}
+
+#map-container {
+  flex: 1;
+  position: relative;
+  min-height: 440px;
+}
+#map-svg { width: 100%; height: 100%; }
+
+.map-tooltip {
+  position: absolute;
+  pointer-events: none;
+  background: var(--brown);
+  color: #f5f0e8;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-family: 'Helvetica Neue', sans-serif;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.12s;
+  z-index: 10;
+}
+.map-tooltip.visible { opacity: 1; }
+.map-tooltip strong { font-weight: 700; font-size: 0.88rem; }
+
+.legend-row {
+  background: var(--cream);
+  border-top: 1px solid var(--border);
+  padding: 0.6rem 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+.legend-label {
+  font-family: 'Helvetica Neue', sans-serif;
+  font-size: 0.7rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  margin-right: 4px;
+}
+.legend-grad {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.swatch { width: 14px; height: 14px; border-radius: 2px; flex-shrink: 0; }
+.legend-grad span {
+  font-family: 'Helvetica Neue', sans-serif;
+  font-size: 0.68rem;
+  color: var(--muted);
+}
+
+/* === CHART PANEL === */
+.chart-panel {
+  background: var(--cream);
+  border-top: 1px solid var(--border);
+  padding: 1rem 1.25rem;
+}
+.chart-title {
+  font-family: 'Helvetica Neue', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  margin-bottom: 0.6rem;
+}
+.chart-wrap { position: relative; height: 120px; }
+
+@media (max-width: 800px) {
+  .layout { grid-template-columns: 1fr; }
+  .panel { border-right: none; border-bottom: 1px solid var(--border); }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Corn Yield &amp; Climate Change</h1>
+  <p>US Drought &amp; Temperature Stress · Interactive Field Activity</p>
+</header>
+
+<div class="layout">
+
+  <!-- ===== LEFT PANEL ===== -->
+  <aside class="panel">
+
+    <div class="panel-section">
+      <div class="panel-section-head">Climate scenario presets</div>
+      <div class="panel-section-body">
+        <div class="scenario-btns">
+          <button class="s-btn active" onclick="loadScenario('baseline')">Baseline<br><span style="font-weight:400;font-size:0.65rem">1990–2020</span></button>
+          <button class="s-btn" onclick="loadScenario('rcp45_2050')">RCP 4.5<br><span style="font-weight:400;font-size:0.65rem">~2050</span></button>
+          <button class="s-btn" onclick="loadScenario('rcp85_2050')">RCP 8.5<br><span style="font-weight:400;font-size:0.65rem">~2050</span></button>
+          <button class="s-btn" onclick="loadScenario('rcp85_2080')">RCP 8.5<br><span style="font-weight:400;font-size:0.65rem">~2080</span></button>
+        </div>
+        <div class="callout science" style="margin-top:2px;">
+          <strong>RCP = Representative Concentration Pathway.</strong> RCP 4.5 assumes moderate emissions cuts. RCP 8.5 assumes fossil fuel use continues at high rates. These are the IPCC's standard scenarios used in USDA and NOAA projections.
+        </div>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-section-head">Adjust model inputs</div>
+      <div class="panel-section-body">
+
+        <div class="slider-group">
+          <div class="slider-label">
+            <span>Growing-season rainfall change</span>
+            <strong id="rain-val">0 mm</strong>
+          </div>
+          <input type="range" id="rain-slider" min="-200" max="50" value="0" step="5" oninput="onSlider()">
+          <div style="display:flex;justify-content:space-between;font-family:'Helvetica Neue',sans-serif;font-size:0.65rem;color:var(--muted);">
+            <span>−200 mm (severe drought)</span><span>+50 mm</span>
+          </div>
+        </div>
+
+        <div class="slider-group">
+          <div class="slider-label">
+            <span>Mean temperature increase (vs 1990–2020)</span>
+            <strong id="temp-val">+0.0 °C</strong>
+          </div>
+          <input type="range" id="temp-slider" min="0" max="5" value="0" step="0.5" oninput="onSlider()">
+          <div style="display:flex;justify-content:space-between;font-family:'Helvetica Neue',sans-serif;font-size:0.65rem;color:var(--muted);">
+            <span>No change</span><span>+5 °C</span>
+          </div>
+        </div>
+
+        <div class="slider-group">
+          <div class="slider-label">
+            <span>Extreme heat days above 34 °C (added per season)</span>
+            <strong id="heat-val">+0 days</strong>
+          </div>
+          <input type="range" id="heat-slider" min="0" max="30" value="0" step="1" oninput="onSlider()">
+          <div style="display:flex;justify-content:space-between;font-family:'Helvetica Neue',sans-serif;font-size:0.65rem;color:var(--muted);">
+            <span>No change</span><span>+30 days</span>
+          </div>
+        </div>
+
+        <div class="slider-group">
+          <div class="slider-label">
+            <span>Atmospheric CO₂ (ppm)</span>
+            <strong id="co2-val">420 ppm</strong>
+          </div>
+          <input type="range" id="co2-slider" min="420" max="900" value="420" step="10" oninput="onSlider()">
+          <div style="display:flex;justify-content:space-between;font-family:'Helvetica Neue',sans-serif;font-size:0.65rem;color:var(--muted);">
+            <span>420 (today)</span><span>900 ppm</span>
+          </div>
+        </div>
+
+        <div class="toggle-row">
+          <input type="checkbox" id="irrig-toggle" onchange="onSlider()">
+          <label for="irrig-toggle">Include irrigation offset for irrigated states (NE, ID, CA, etc.)</label>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-section-head">National summary</div>
+      <div class="panel-section-body" style="gap:0.5rem;">
+        <div class="metric-row">
+          <div class="metric">
+            <div class="m-val" id="nat-yield">177</div>
+            <div class="m-lbl">Avg bu/ac</div>
+          </div>
+          <div class="metric">
+            <div class="m-val loss" id="nat-change">—</div>
+            <div class="m-lbl">Change vs baseline</div>
+          </div>
+        </div>
+        <div class="metric-row">
+          <div class="metric">
+            <div class="m-val loss" id="nat-pct">—</div>
+            <div class="m-lbl">% change</div>
+          </div>
+          <div class="metric">
+            <div class="m-val" id="nat-prod">14.8B bu</div>
+            <div class="m-lbl">Est. US production</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-section-head">Selected state</div>
+      <div class="panel-section-body" style="padding:0.75rem;">
+        <div id="state-detail" class="state-info">
+          <div class="si-name">Click a state on the map</div>
+          <div class="si-row"><span class="si-k">to see detailed yield data</span><span class="si-v"></span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-section-head">Think about it</div>
+      <div class="panel-section-body" style="gap:0.6rem;">
+        <div class="callout question">
+          <strong>Try this:</strong> Set rainfall to −150 mm and temperature to +3 °C. Which states turn red first? Why might Kansas and Missouri be more vulnerable than Iowa?
+        </div>
+        <div class="callout question">
+          <strong>Then try:</strong> Enable the irrigation offset. How does Nebraska change compared to Kansas? What does this tell us about infrastructure as a climate adaptation strategy?
+        </div>
+        <div class="callout science">
+          <strong>Model source:</strong> Baseline yields from USDA NASS 2018–2023. Stress functions adapted from the FAO-56 water productivity framework (Ks factor) and Schlenker &amp; Roberts (2009) non-linear temperature response for US corn. CO₂ fertilization based on FACE experiment meta-analysis (Leakey et al., 2012) — corn is a C4 plant with weak CO₂ response.
+        </div>
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- ===== RIGHT: MAP + CHART ===== -->
+  <main class="map-area">
+    <div class="map-toolbar">
+      <div class="view-btns">
+        <button class="v-btn active" id="vbtn-abs" onclick="setView('abs')">Yield (bu/ac)</button>
+        <button class="v-btn" id="vbtn-pct" onclick="setView('pct')">% change vs baseline</button>
+        <button class="v-btn" id="vbtn-loss" onclick="setView('loss')">Yield loss (bu/ac)</button>
+      </div>
+      <span class="toolbar-note">Hover or tap a state for details</span>
+    </div>
+
+    <div id="map-container">
+      <div class="map-tooltip" id="tooltip"></div>
+      <svg id="map-svg" role="img" aria-label="Choropleth map of US corn yield change by state under selected climate scenario"></svg>
+    </div>
+
+    <div class="legend-row" id="legend-row"></div>
+
+    <div class="chart-panel">
+      <div class="chart-title" id="chart-title">Top 10 corn states — yield comparison (bu/ac)</div>
+      <div class="chart-wrap">
+        <canvas id="bar-chart" role="img" aria-label="Bar chart comparing baseline vs projected corn yield for top 10 states"></canvas>
+      </div>
+    </div>
+  </main>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+
+// ================================================================
+// DATA — USDA NASS 5-yr avg 2019–2023 baseline yields (bu/ac)
+// Keyed by FIPS numeric ID (us-atlas states-10m.json)
+// Growing-season rainfall baseline (mm, Apr–Sep) from PRISM normals
+// ================================================================
+const STATE_DATA = {
+  19: { name:'Iowa',           yield:202, rain:530, maxT:30.2, irrigPct:0.04 },
+  17: { name:'Illinois',       yield:196, rain:520, maxT:30.8, irrigPct:0.01 },
+  31: { name:'Nebraska',       yield:188, rain:380, maxT:32.0, irrigPct:0.65 },
+  18: { name:'Indiana',        yield:191, rain:510, maxT:30.5, irrigPct:0.02 },
+  27: { name:'Minnesota',      yield:185, rain:490, maxT:27.8, irrigPct:0.05 },
+  39: { name:'Ohio',           yield:177, rain:500, maxT:29.2, irrigPct:0.01 },
+  55: { name:'Wisconsin',      yield:162, rain:480, maxT:27.0, irrigPct:0.02 },
+  46: { name:'South Dakota',   yield:153, rain:350, maxT:29.5, irrigPct:0.10 },
+  20: { name:'Kansas',         yield:150, rain:400, maxT:33.5, irrigPct:0.14 },
+  29: { name:'Missouri',       yield:162, rain:490, maxT:31.8, irrigPct:0.03 },
+  38: { name:'North Dakota',   yield:136, rain:330, maxT:27.0, irrigPct:0.06 },
+  26: { name:'Michigan',       yield:165, rain:510, maxT:27.5, irrigPct:0.03 },
+  48: { name:'Texas',          yield:130, rain:310, maxT:36.5, irrigPct:0.28 },
+  40: { name:'Oklahoma',       yield:115, rain:350, maxT:34.8, irrigPct:0.12 },
+  13: { name:'Georgia',        yield:155, rain:430, maxT:33.0, irrigPct:0.18 },
+  37: { name:'North Carolina', yield:108, rain:470, maxT:31.5, irrigPct:0.05 },
+  21: { name:'Kentucky',       yield:168, rain:500, maxT:30.0, irrigPct:0.01 },
+  47: { name:'Tennessee',      yield:145, rain:490, maxT:30.5, irrigPct:0.02 },
+  28: { name:'Mississippi',    yield:140, rain:500, maxT:33.0, irrigPct:0.06 },
+  05: { name:'Arkansas',       yield:148, rain:470, maxT:33.0, irrigPct:0.15 },
+  31+100: null,
+  16: { name:'Idaho',          yield:145, rain:180, maxT:28.5, irrigPct:0.90 },
+  06: { name:'California',     yield:182, rain:50,  maxT:34.0, irrigPct:0.98 },
+  53: { name:'Washington',     yield:185, rain:180, maxT:28.0, irrigPct:0.70 },
+  41: { name:'Oregon',         yield:188, rain:200, maxT:27.5, irrigPct:0.75 },
+  56: { name:'Wyoming',        yield:115, rain:220, maxT:27.0, irrigPct:0.60 },
+  08: { name:'Colorado',       yield:135, rain:260, maxT:31.5, irrigPct:0.55 },
+  35: { name:'New Mexico',     yield: 98, rain:180, maxT:35.0, irrigPct:0.70 },
+  04: { name:'Arizona',        yield:120, rain: 90, maxT:38.0, irrigPct:0.95 },
+  49: { name:'Utah',           yield:145, rain:160, maxT:29.0, irrigPct:0.80 },
+  30: { name:'Montana',        yield: 88, rain:280, maxT:27.0, irrigPct:0.25 },
+  23: { name:'Maine',          yield: 80, rain:500, maxT:24.0, irrigPct:0.02 },
+  50: { name:'Vermont',        yield: 78, rain:520, maxT:23.5, irrigPct:0.01 },
+  33: { name:'New Hampshire',  yield: 75, rain:510, maxT:24.0, irrigPct:0.01 },
+  25: { name:'Massachusetts',  yield: 72, rain:520, maxT:24.5, irrigPct:0.02 },
+  44: { name:'Rhode Island',   yield: 68, rain:510, maxT:24.8, irrigPct:0.01 },
+  09: { name:'Connecticut',    yield: 70, rain:510, maxT:25.0, irrigPct:0.01 },
+  36: { name:'New York',       yield:130, rain:500, maxT:25.0, irrigPct:0.02 },
+  42: { name:'Pennsylvania',   yield:150, rain:490, maxT:26.5, irrigPct:0.02 },
+  24: { name:'Maryland',       yield:122, rain:460, maxT:29.5, irrigPct:0.03 },
+  10: { name:'Delaware',       yield:140, rain:450, maxT:28.5, irrigPct:0.03 },
+  51: { name:'Virginia',       yield:130, rain:460, maxT:29.5, irrigPct:0.03 },
+  54: { name:'West Virginia',  yield:100, rain:490, maxT:27.5, irrigPct:0.01 },
+  45: { name:'South Carolina', yield:128, rain:450, maxT:32.5, irrigPct:0.08 },
+  01: { name:'Alabama',        yield:142, rain:490, maxT:33.0, irrigPct:0.04 },
+  12: { name:'Florida',        yield:100, rain:540, maxT:34.0, irrigPct:0.15 },
+  22: { name:'Louisiana',      yield:130, rain:520, maxT:33.5, irrigPct:0.08 },
+  02: { name:'Alaska',         yield: 0,  rain:300, maxT:15.0, irrigPct:0.00 },
+  15: { name:'Hawaii',         yield: 0,  rain:600, maxT:28.0, irrigPct:0.30 },
+  34: { name:'New Jersey',     yield:142, rain:470, maxT:26.5, irrigPct:0.03 },
+  32: { name:'Nevada',         yield: 90, rain: 80, maxT:34.0, irrigPct:0.85 },
+};
+
+const FIPS_NAMES = {};
+Object.entries(STATE_DATA).forEach(([k,v]) => { if(v) FIPS_NAMES[+k] = v.name; });
+
+// ================================================================
+// SCENARIO PRESETS
+// ================================================================
+const SCENARIOS = {
+  baseline:   { rain:0,    temp:0,   heat:0,  co2:420 },
+  rcp45_2050: { rain:-60,  temp:1.5, heat:8,  co2:540 },
+  rcp85_2050: { rain:-100, temp:2.5, heat:15, co2:600 },
+  rcp85_2080: { rain:-160, temp:4.0, heat:25, co2:800 },
+};
+
+// ================================================================
+// YIELD MODEL
+// Adapted from FAO-56 Ks water stress + Schlenker-Roberts (2009)
+// nonlinear heat response + weak C4 CO2 effect (FACE meta-analysis)
+// ================================================================
+function calcYield(fips, deltaRain, deltaTemp, extraHeatDays, co2, useIrrig) {
+  const s = STATE_DATA[fips];
+  if(!s || s.yield === 0) return { projected:0, pct:0, baseline:0 };
+
+  const baseYield = s.yield;
+
+  // --- Water stress (FAO-56 Ks) ---
+  // Ks = 1 - (1 - AET/PET); simplified: Ks = rain / ETc_demand
+  // Baseline ETc demand ~550mm for corn; depletion fraction p=0.55
+  const ETc = 550;
+  const ETc_depletion = ETc * 0.55;
+  const effRain = s.rain + deltaRain;
+  const irrigOffset = useIrrig ? s.irrigPct * Math.max(0, -deltaRain) : 0;
+  const waterSupply = Math.max(0, effRain + irrigOffset);
+  const Ks = waterSupply >= ETc ? 1 : Math.max(0, 0.25 + 0.75 * (waterSupply / ETc));
+  const waterStress = (1 - Ks);
+
+  // --- Temperature stress (Schlenker-Roberts non-linear) ---
+  // Beneficial below 29°C; harmful above 29°C threshold;
+  // Above 34°C: severe pollen kill (each additional day -0.85% yield)
+  const newMaxT = s.maxT + deltaTemp;
+  let tempStressFactor = 0;
+  if(newMaxT > 29) {
+    tempStressFactor += Math.min(0.25, (newMaxT - 29) * 0.028);
+  }
+  tempStressFactor += extraHeatDays * 0.0085;
+
+  // --- CO2 fertilization (C4 corn — very weak response) ---
+  // Based on FACE meta-analysis: corn ~0.06% yield gain per ppm above 360
+  // (compared to C3 crops like wheat/soy which benefit more)
+  const co2Gain = Math.max(0, (co2 - 420) * 0.00006);
+
+  // --- Combined ---
+  const stressTotal = Math.min(0.80, waterStress * 0.65 + tempStressFactor);
+  const projected = Math.max(20, baseYield * (1 - stressTotal) * (1 + co2Gain));
+  const pct = (projected - baseYield) / baseYield * 100;
+
+  return { projected: Math.round(projected), pct: Math.round(pct * 10) / 10, baseline: baseYield };
+}
+
+// ================================================================
+// STATE
+// ================================================================
+let currentView = 'abs';
+let currentScenario = 'baseline';
+let projectedYields = {};
+let selectedFips = null;
+let chartInst = null;
+
+function getInputs() {
+  return {
+    deltaRain:     +document.getElementById('rain-slider').value,
+    deltaTemp:     +document.getElementById('temp-slider').value,
+    extraHeatDays: +document.getElementById('heat-slider').value,
+    co2:           +document.getElementById('co2-slider').value,
+    useIrrig:      document.getElementById('irrig-toggle').checked,
+  };
+}
+
+function recalc() {
+  const { deltaRain, deltaTemp, extraHeatDays, co2, useIrrig } = getInputs();
+  projectedYields = {};
+  Object.entries(STATE_DATA).forEach(([fips, s]) => {
+    if(s) projectedYields[+fips] = calcYield(+fips, deltaRain, deltaTemp, extraHeatDays, co2, useIrrig);
+  });
+  updateMap();
+  updateSummary();
+  updateChart();
+  if(selectedFips) updateStateDetail(selectedFips);
+}
+
+function onSlider() {
+  document.querySelectorAll('.s-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('rain-val').textContent = (+document.getElementById('rain-slider').value > 0 ? '+' : '') + document.getElementById('rain-slider').value + ' mm';
+  document.getElementById('temp-val').textContent = '+' + (+document.getElementById('temp-slider').value).toFixed(1) + ' °C';
+  document.getElementById('heat-val').textContent = '+' + document.getElementById('heat-slider').value + ' days';
+  document.getElementById('co2-val').textContent = document.getElementById('co2-slider').value + ' ppm';
+  recalc();
+}
+
+function loadScenario(name) {
+  currentScenario = name;
+  document.querySelectorAll('.s-btn').forEach(b => b.classList.remove('active'));
+  event.target.closest('.s-btn').classList.add('active');
+  const sc = SCENARIOS[name];
+  document.getElementById('rain-slider').value = sc.rain;
+  document.getElementById('temp-slider').value = sc.temp;
+  document.getElementById('heat-slider').value = sc.heat;
+  document.getElementById('co2-slider').value  = sc.co2;
+  document.getElementById('rain-val').textContent = (sc.rain > 0 ? '+' : '') + sc.rain + ' mm';
+  document.getElementById('temp-val').textContent = '+' + sc.temp.toFixed(1) + ' °C';
+  document.getElementById('heat-val').textContent = '+' + sc.heat + ' days';
+  document.getElementById('co2-val').textContent  = sc.co2 + ' ppm';
+  recalc();
+}
+
+function setView(v) {
+  currentView = v;
+  document.querySelectorAll('.v-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('vbtn-' + v).classList.add('active');
+  updateMap();
+}
+
+// ================================================================
+// MAP
+// ================================================================
+const COLOR_SCALES = {
+  abs: {
+    thresholds: [80, 120, 150, 170, 185, 200, 215],
+    colors: ['#d02020','#f0803a','#ffc870','#fff3b0','#d4e6a0','#91c46e','#4d9e3a','#1a6b2a'],
+    label: 'Yield (bu/ac)',
+    fmt: v => v + ' bu/ac',
+  },
+  pct: {
+    thresholds: [-35,-25,-15,-8,-2, 2],
+    colors: ['#8B1010','#d02020','#f0803a','#ffd080','#fffacc','#d4e6a0','#4d9e3a'],
+    label: 'Change vs baseline (%)',
+    fmt: v => (v > 0 ? '+' : '') + v + '%',
+  },
+  loss: {
+    thresholds: [-60,-40,-25,-12,-4, 0],
+    colors: ['#8B1010','#d02020','#f0803a','#ffd080','#fffacc','#d4e6a0','#4d9e3a'],
+    label: 'Yield loss (bu/ac)',
+    fmt: v => (v > 0 ? '+' : '') + v + ' bu/ac',
+  },
+};
+
+function colorFor(fips, view) {
+  const data = projectedYields[fips];
+  if(!data || data.baseline === 0) return '#ccc';
+  const { abs, pct, loss } = {
+    abs: data.projected,
+    pct: data.pct,
+    loss: data.projected - data.baseline,
+  };
+  const val = view === 'abs' ? abs : view === 'pct' ? pct : loss;
+  const scale = COLOR_SCALES[view];
+  for(let i = 0; i < scale.thresholds.length; i++) {
+    if(val <= scale.thresholds[i]) return scale.colors[i];
+  }
+  return scale.colors[scale.colors.length - 1];
+}
+
+let mapPath, svgG;
+
+function buildMap(us) {
+  const svg = d3.select('#map-svg');
+  svg.selectAll('*').remove();
+
+  const container = document.getElementById('map-container');
+  const W = container.clientWidth || 720;
+  const H = container.clientHeight || 460;
+
+  svg.attr('viewBox', `0 0 ${W} ${H}`);
+
+  const projection = d3.geoAlbersUsa().scale(W * 1.15).translate([W * 0.5, H * 0.5]);
+  mapPath = d3.geoPath(projection);
+
+  svgG = svg.append('g');
+
+  const features = topojson.feature(us, us.objects.states).features;
+
+  svgG.selectAll('path')
+    .data(features)
+    .join('path')
+    .attr('d', mapPath)
+    .attr('stroke', '#fffdf7')
+    .attr('stroke-width', 0.6)
+    .attr('fill', d => colorFor(+d.id, currentView))
+    .attr('class', 'state-path')
+    .style('cursor', 'pointer')
+    .on('mousemove', (e, d) => showTooltip(e, +d.id))
+    .on('mouseleave', hideTooltip)
+    .on('click', (e, d) => { selectedFips = +d.id; updateStateDetail(+d.id); });
+
+  svgG.append('path')
+    .datum(topojson.mesh(us, us.objects.states, (a, b) => a !== b))
+    .attr('d', mapPath)
+    .attr('fill', 'none')
+    .attr('stroke', '#fffdf7')
+    .attr('stroke-width', 0.4);
+}
+
+function updateMapColors() {
+  if(!svgG) return;
+  svgG.selectAll('.state-path')
+    .attr('fill', d => colorFor(+d.id, currentView));
+}
+
+function updateMap() {
+  updateMapColors();
+  buildLegend();
+}
+
+function buildLegend() {
+  const scale = COLOR_SCALES[currentView];
+  const row = document.getElementById('legend-row');
+  row.innerHTML = `<span class="legend-label">${scale.label}:</span>`;
+  const allColors = scale.colors;
+  const labels = ['Low', ...scale.thresholds.map(t => t + ''), 'High'];
+  const div = document.createElement('div');
+  div.style.cssText = 'display:flex;align-items:center;gap:3px;flex-wrap:wrap;';
+  allColors.forEach((c, i) => {
+    const sw = document.createElement('span');
+    sw.className = 'swatch';
+    sw.style.background = c;
+    div.appendChild(sw);
+    if(i === 0 || i === Math.floor(allColors.length/2) || i === allColors.length-1) {
+      const lbl = document.createElement('span');
+      lbl.style.cssText = 'font-family:Helvetica Neue,sans-serif;font-size:0.66rem;color:var(--muted);margin-right:6px;';
+      lbl.textContent = labels[i];
+      div.appendChild(lbl);
+    }
+  });
+  row.appendChild(div);
+}
+
+const tooltip = document.getElementById('tooltip');
+function showTooltip(e, fips) {
+  const s = STATE_DATA[fips];
+  const data = projectedYields[fips];
+  if(!s || s.yield === 0 || !data) return;
+  const pct = data.pct;
+  const loss = data.projected - data.baseline;
+  tooltip.innerHTML = `<strong>${s.name}</strong><br>
+    Baseline: ${data.baseline} bu/ac<br>
+    Projected: ${data.projected} bu/ac<br>
+    Change: ${loss > 0 ? '+' : ''}${loss} bu/ac (${pct > 0 ? '+' : ''}${pct.toFixed(1)}%)`;
+  const rect = document.getElementById('map-container').getBoundingClientRect();
+  let x = e.clientX - rect.left + 12;
+  let y = e.clientY - rect.top - 10;
+  if(x + 200 > rect.width) x -= 220;
+  tooltip.style.left = x + 'px';
+  tooltip.style.top = y + 'px';
+  tooltip.classList.add('visible');
+}
+function hideTooltip() { tooltip.classList.remove('visible'); }
+
+// ================================================================
+// SUMMARY
+// ================================================================
+function updateSummary() {
+  const cornStates = [19,17,31,18,27,39,55,46,20,29,38,26,48,40,21,47,28,05,42,36];
+  let totalProj = 0, totalBase = 0, n = 0;
+  cornStates.forEach(f => {
+    const d = projectedYields[f];
+    if(d && d.baseline > 0) { totalProj += d.projected; totalBase += d.baseline; n++; }
+  });
+  const avgProj = Math.round(totalProj / n);
+  const avgBase = Math.round(totalBase / n);
+  const change = avgProj - avgBase;
+  const pct = Math.round((change / avgBase) * 100);
+  const totalProd = (avgProj * 90 / 1e9).toFixed(1);
+
+  document.getElementById('nat-yield').textContent = avgProj;
+  document.getElementById('nat-yield').className = 'm-val' + (change < 0 ? ' loss' : change > 0 ? ' gain' : '');
+  document.getElementById('nat-change').textContent = (change > 0 ? '+' : '') + change + ' bu/ac';
+  document.getElementById('nat-change').className = 'm-val' + (change < 0 ? ' loss' : change > 0 ? ' gain' : '');
+  document.getElementById('nat-pct').textContent = (pct > 0 ? '+' : '') + pct + '%';
+  document.getElementById('nat-pct').className = 'm-val' + (pct < 0 ? ' loss' : pct > 0 ? ' gain' : '');
+  document.getElementById('nat-prod').textContent = totalProd + 'B bu';
+}
+
+// ================================================================
+// STATE DETAIL
+// ================================================================
+function updateStateDetail(fips) {
+  const s = STATE_DATA[fips];
+  const d = projectedYields[fips];
+  if(!s || !d) return;
+  const loss = d.projected - d.baseline;
+  const rDelta = +document.getElementById('rain-slider').value;
+  const html = `
+    <div class="si-name">${s.name}</div>
+    <div class="si-row"><span class="si-k">Baseline yield (USDA NASS avg)</span><span class="si-v">${d.baseline} bu/ac</span></div>
+    <div class="si-row"><span class="si-k">Projected yield</span><span class="si-v ${loss < 0 ? 'neg' : 'pos'}">${d.projected} bu/ac</span></div>
+    <div class="si-row"><span class="si-k">Yield change</span><span class="si-v ${loss < 0 ? 'neg' : 'pos'}">${loss > 0 ? '+' : ''}${loss} bu/ac (${d.pct > 0 ? '+' : ''}${d.pct.toFixed(1)}%)</span></div>
+    <div class="si-row"><span class="si-k">Baseline season rainfall</span><span class="si-v">${s.rain} mm</span></div>
+    <div class="si-row"><span class="si-k">Projected season rainfall</span><span class="si-v ${rDelta < -50 ? 'neg' : ''}">${s.rain + rDelta} mm</span></div>
+    <div class="si-row"><span class="si-k">Irrigation coverage</span><span class="si-v">${Math.round(s.irrigPct * 100)}%</span></div>
+    <div class="si-row"><span class="si-k">Baseline avg max temp</span><span class="si-v">${s.maxT.toFixed(1)} °C</span></div>
+  `;
+  document.getElementById('state-detail').innerHTML = html;
+}
+
+// ================================================================
+// BAR CHART
+// ================================================================
+const TOP_STATES = [19,17,31,18,27,39,55,20,29,38];
+
+function updateChart() {
+  const labels = TOP_STATES.map(f => STATE_DATA[f]?.name.replace(' ','').replace('North ','N. ').replace('South ','S. ') || '');
+  const baseData = TOP_STATES.map(f => STATE_DATA[f]?.yield || 0);
+  const projData = TOP_STATES.map(f => projectedYields[f]?.projected || 0);
+  const isBaseline = document.getElementById('rain-slider').value == 0 &&
+                     document.getElementById('temp-slider').value == 0 &&
+                     document.getElementById('heat-slider').value == 0;
+  document.getElementById('chart-title').textContent = 'Top 10 corn states — yield comparison (bu/ac)';
+  if(chartInst) { chartInst.destroy(); chartInst = null; }
+  chartInst = new Chart(document.getElementById('bar-chart'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Baseline (USDA NASS)', data: baseData, backgroundColor: 'rgba(74,124,78,0.25)', borderColor: '#4a7c4e', borderWidth: 1.5 },
+        { label: 'Projected', data: projData, backgroundColor: projData.map((p, i) => p < baseData[i] ? 'rgba(184,74,44,0.65)' : 'rgba(74,124,78,0.65)'), borderColor: projData.map((p,i) => p < baseData[i] ? '#b84a2c' : '#4a7c4e'), borderWidth: 1.5 },
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => ctx.dataset.label + ': ' + ctx.parsed.y + ' bu/ac'
+          }
+        }
+      },
+      scales: {
+        x: { ticks: { font: { size: 10 }, color: '#6b5e52', autoSkip: false, maxRotation: 35 }, grid: { display: false } },
+        y: { ticks: { font: { size: 10 }, color: '#6b5e52' }, grid: { color: 'rgba(0,0,0,0.06)' }, title: { display: false } }
+      }
+    }
+  });
+}
+
+// ================================================================
+// INIT
+// ================================================================
+recalc();
+
+d3.json('https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json').then(us => {
+  buildMap(us);
+  updateMap();
+}).catch(() => {
+  document.getElementById('map-container').innerHTML =
+    '<div style="display:flex;align-items:center;justify-content:center;height:300px;font-family:Helvetica Neue,sans-serif;font-size:0.85rem;color:var(--muted);">Map requires internet connection. Model calculations above still work.</div>';
+});
+
+window.addEventListener('resize', () => {
+  d3.json('https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json').then(us => { buildMap(us); updateMap(); });
+});
+</script>
+</body>
+</html>
