@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>Corn Yield & Climate Change — US Map Activity</title>
+<!-- Chart.js MUST come before ArcGIS SDK — prevents AMD multipleDefine conflict -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <link rel="stylesheet" href="https://js.arcgis.com/4.29/esri/themes/light/main.css">
 <script src="https://js.arcgis.com/4.29/"></script>
 <style>
@@ -186,7 +188,7 @@ input[type=range]{width:100%;accent-color:#4a7c4e;cursor:pointer;height:4px}
   </div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<!-- Chart.js loaded in <head> before ArcGIS SDK -->
 <script>
 // ════════════════════════════════════════════════════════════
 //  DIAGNOSTIC LOGGER  —  captures all errors, warnings, and
@@ -490,7 +492,10 @@ function updateChart() {
   const bdat=TOP10.map(n=>SD[n].y);
   const pdat=TOP10.map(n=>PROJ[n]?.proj||0);
   if(chartInst){chartInst.destroy();chartInst=null;}
-  chartInst=new Chart(document.getElementById('bc'),{
+  const canvas = document.getElementById('bc');
+  logInfo('Chart canvas found: ' + !!canvas + (canvas ? ', size: ' + canvas.offsetWidth + 'x' + canvas.offsetHeight : ''));
+  try {
+  chartInst=new Chart(canvas,{
     type:'bar',
     data:{labels:lbls,datasets:[
       {label:'Baseline (USDA NASS)',data:bdat,backgroundColor:'rgba(74,124,78,.2)',borderColor:'#4a7c4e',borderWidth:1.5},
@@ -506,6 +511,8 @@ function updateChart() {
       }
     }
   });
+  logInfo('Chart created OK');
+  } catch(e) { logError('Chart creation failed: ' + e.message); }
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -598,8 +605,8 @@ require([
 
   logInfo('GeoJSONLayer created');
 
-  const map = new Map({ basemap: 'gray-vector', layers: [geoLayer] });
-  logInfo('Map created with gray-vector basemap');
+  const map = new Map({ basemap: 'osm', layers: [geoLayer] });
+  logInfo('Map created with osm basemap (no API key required)');
 
   const view = new MapView({
     container: 'viewDiv',
